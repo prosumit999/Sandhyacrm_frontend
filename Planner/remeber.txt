@@ -1,0 +1,466 @@
+================================================================================
+  FRONTEND PLANNER — SANDHYA CRM
+  Last Updated : 2026-06-10 (Session 1 — Login Screen + API Layer)
+================================================================================
+
+HOW TO USE THIS FILE
+────────────────────
+  At the start of every new frontend session, say:
+  "Read Frontend/Planner/remeber.txt and Backend/Planner/remember.txt
+   then continue from where we left off."
+
+  At the END of every session, update this file with:
+    - Design decisions made this session
+    - Components built
+    - Files created / modified
+    - Any bugs or gotchas found
+
+================================================================================
+  SECTION 1 — OVERALL DESIGN PRINCIPLES
+================================================================================
+
+  THEME
+  ─────
+  Light theme ONLY — no dark mode. Never add dark: variants.
+  color-scheme on root must stay "light".
+
+  DESIGN REFERENCE
+  ────────────────
+  Style inspiration: Zoho CRM login screen
+  Key traits: minimal, clean, professional, business-focused, no AI-generated feel.
+  What that means:
+    - No decorative gradients on form-side panels
+    - No rounded pill buttons (use slightly-rounded rectangles)
+    - Lots of whitespace — don't fill every pixel
+    - Conservative color use — blue only for CTAs and focus rings
+    - Content-first — no patterns, textures, or heavy illustrations on login
+
+  COLORS
+  ──────
+  Primary blue (CTAs, focus, links) : #1a73e8
+  Primary blue hover                 : #1557b0
+  Primary blue disabled              : #93c5fd
+
+  Page background (outer)            : #ececec
+  Card background                    : #ffffff
+  Right panel tint                   : #f8faff  (very slight blue tint on illustration panels)
+  Sidebar (when built)               : TBD — keep consistent with this system
+
+  Text primary                       : #111827
+  Text secondary / muted             : #6b7280
+  Text placeholder                   : #9ca3af
+  Text heading (strong)              : #1e293b
+
+  Border default                     : #d1d5db
+  Border focus                       : #1a73e8
+  Divider                            : #e5e7eb
+
+  Error text                         : #dc2626
+  Error background                   : #fef2f2
+  Error border                       : #fecaca
+
+  Success text                       : #16a34a
+  Success background                 : #f0fdf4
+
+  Warning (soft)                     : #d97706
+
+  Badge — Active / Live              : green (#16a34a bg light)
+  Badge — Expired / Broken           : red   (#dc2626 bg light)
+  Badge — Pending                    : amber (#d97706 bg light)
+  Badge — Draft                      : gray  (#6b7280 bg light)
+
+  TYPOGRAPHY
+  ──────────
+  Font family  : 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif
+  Base size    : 14px (body), 13-13.5px (form fields, labels), 12px (meta/footer)
+  Headings     : 27-28px (page titles), 16-18px (section headings), 13.5px (card titles)
+  Weight       : 700 (h1/h2), 600 (button text, labels), 500 (subheadings), 400 (body)
+  Letter spacing: -0.4px on large headings, +0.1px on button text, +0.8px on logo text
+
+  SPACING (use these consistently — do not eyeball)
+  ──────────────────────────────────────────────────
+  Card padding               : 48-52px (desktop panels)
+  Logo → heading gap         : 44px margin-bottom on logo block
+  Heading → form gap         : 26px margin-top on form
+  Field vertical gap         : 12-14px between stacked inputs
+  Button margin-top          : 20px from last field
+  Section internal padding   : 32px
+  Page outer padding         : 24px (mobile) / 48px (desktop)
+
+  SHADOWS
+  ───────
+  Card (main)     : 0 2px 20px rgba(0,0,0,0.09)
+  Dropdown/popup  : 0 4px 16px rgba(0,0,0,0.12)
+  Hover state     : 0 2px 8px rgba(0,0,0,0.08)
+  No shadow       : inputs, text areas, badges
+
+  BORDER RADIUS
+  ─────────────
+  Cards / modals     : 12px
+  Input fields       : 6px
+  Buttons            : 6px
+  Logo icon squares  : 8px
+  Small badges       : 4px
+  Avatars / circles  : 50%
+
+  ANIMATION POLICY
+  ────────────────
+  Library: Framer Motion — use SPARINGLY.
+  Allowed:
+    - Page/card mount: single fade (opacity 0→1) + slight slide (y: 14→0), duration 0.3s ease-out
+    - Error banner: fade + slide up (y: -6→0)
+    - Modal open: fade + scale (scale 0.97→1)
+  NOT allowed:
+    - Hover animations on data cells or nav items (use CSS transition: color 0.15s only)
+    - Staggered list animations
+    - Looping or continuous animations (except loading spinners)
+    - Page exit animations (only enter)
+  Loading spinner: inline SVG, CSS animation loginSpin, 0.75s linear infinite
+
+================================================================================
+  SECTION 2 — COMPONENT-SPECIFIC DESIGN PRINCIPLES
+================================================================================
+
+  ── INPUTS (text, email, password, search) ──────────────────────────────────
+
+  Use native HTML <input> with inline style objects (NOT HeroUI Input) for form pages.
+  HeroUI Input is used for complex search/filter UIs inside data pages.
+
+  Style template:
+    padding        : 11px 15px
+    border         : 1px solid #d1d5db
+    border-radius  : 6px
+    font-size      : 13.5-14px
+    color          : #111827
+    background     : white
+    outline        : none
+    width          : 100%
+    box-sizing     : border-box
+    font-family    : inherit
+    transition     : border-color 0.15s
+
+  Focus state  (onFocus handler): borderColor = '#1a73e8'
+  Blur state   (onBlur handler) : borderColor = '#d1d5db'
+  Error state  : borderColor = '#dc2626'  (set programmatically when field has error)
+
+  Password field: add padding-right: 42px to make room for show/hide toggle button
+  Show/hide toggle: absolute positioned, right: 13px, verticalAlign middle, color #9ca3af → hover #6b7280
+
+  Placeholder text: color #9ca3af, font-size 13.5px (injected via <style> tag)
+
+  ── BUTTONS ─────────────────────────────────────────────────────────────────
+
+  Primary button (submit / CTA):
+    background     : #1a73e8
+    hover          : #1557b0  (onMouseOver handler)
+    disabled       : #93c5fd  + cursor: not-allowed
+    color          : white
+    padding        : 12px (top/bottom), full width for form submits
+    border-radius  : 6px
+    font-size      : 14px
+    font-weight    : 600
+    letter-spacing : 0.1px
+    border         : none
+    display        : flex, alignItems center, justifyContent center, gap 8px
+    transition     : background 0.15s
+    font-family    : inherit
+
+  Loading state inside button:
+    Show inline SVG spinner (16x16, strokeWidth 2.5, white stroke)
+    CSS animation: loginSpin (rotate 0→360, 0.75s linear infinite)
+    Button text changes to "Signing in..." or equivalent
+
+  Secondary / ghost button (when needed):
+    background     : transparent
+    border         : 1px solid #d1d5db
+    color          : #374151
+    hover border   : #9ca3af
+    Same radius, padding, font as primary
+
+  Danger button (delete actions):
+    background     : #dc2626
+    hover          : #b91c1c
+
+  ── CHECKBOXES ──────────────────────────────────────────────────────────────
+
+  Use native <input type="checkbox"> styled with accentColor: '#1a73e8'
+  Width/height: 14-15px
+  Wrap in <label> with display flex, gap 7px, cursor pointer
+  Label text: 13px, color #6b7280, userSelect none
+
+  ── LINKS ───────────────────────────────────────────────────────────────────
+
+  Color       : #1a73e8
+  Font-weight : 500
+  Font-size   : 13px
+  Text-decoration: none (default), underline on hover (onMouseOver handler)
+  Transition  : text-decoration 0s (instant)
+
+  ── CARDS / PANELS ──────────────────────────────────────────────────────────
+
+  Main content card:
+    background     : white
+    border-radius  : 12px
+    box-shadow     : 0 2px 20px rgba(0,0,0,0.09)
+    overflow       : hidden  (so child backgrounds don't bleed past corners)
+
+  Two-panel cards (like login):
+    Left panel     : white, flex 0 0 400px, padding 52px 48px
+    Vertical divider: width 1px, background #e5e7eb, flexShrink 0
+    Right panel    : flex 1, background #f8faff, centered content
+
+  ── ERROR BANNERS ────────────────────────────────────────────────────────────
+
+  Display at top of form, above first field.
+  Animate in with Framer Motion: opacity 0→1, y -6→0.
+
+  Style:
+    background     : #fef2f2
+    border         : 1px solid #fecaca
+    border-radius  : 6px
+    padding        : 9px 12px
+    font-size      : 12.5px
+    color          : #dc2626
+    display        : flex, alignItems center, gap 7px
+  Icon: 14x14 SVG exclamation circle, fill currentColor, flexShrink 0
+
+  ── LOGO BLOCK (header of auth screens) ─────────────────────────────────────
+
+  Icon square:
+    width/height   : 34px
+    background     : #1a73e8
+    border-radius  : 8px
+    display        : flex, alignItems center, justifyContent center
+    SVG inside     : 19x19, white stroke, strokeWidth 2.2
+  Text:
+    font-size      : 13.5px
+    font-weight    : 700
+    color          : #1e293b
+    letter-spacing : 0.8px
+    content        : "SANDHYA CRM" (all caps)
+
+  ── ICONS ───────────────────────────────────────────────────────────────────
+
+  Source: Heroicons outline style (inline SVG — no icon library installed yet)
+  strokeWidth: 1.5-1.8 for decorative, 2.0-2.2 for functional/interactive
+  Always set explicit width and height attributes on the SVG element
+  Color: inherit from parent (currentColor) or set explicitly via stroke/fill
+
+================================================================================
+  SECTION 3 — FRONTEND FOLDER STRUCTURE
+================================================================================
+
+  Frontend/src/
+  ├── api/                         Axios API service files (one per backend resource)
+  │   ├── axios.js                 Axios instance — baseURL /api/v1, withCredentials true,
+  │   │                            silent 401 → /auth/refresh interceptor + queue
+  │   ├── authApi.js               login, logout, refreshToken, forgotPassword, resetPassword, getMe
+  │   ├── userApi.js               getAllUsers, getUserById, createUser, updateUser, deleteUser,
+  │   │                            toggleUserActive, updateUserPermissions
+  │   ├── customerApi.js           getAllCustomers, createCustomer, getById, update, delete,
+  │   │                            getCustomerSubscriptions, getCustomerInvoices
+  │   ├── dashboardApi.js          getKPIs, getUpcomingRenewals, getInfraAlerts, getSoftwareStatus,
+  │   │                            getRecentActivity, getAlertSummary
+  │   ├── softwareApi.js           getAllSoftwares, createSoftware, getById, update, delete,
+  │   │                            getSoftwareCustomers
+  │   ├── subscriptionApi.js       getAllSubscriptions, create, getById, update, delete, renew
+  │   ├── invoiceApi.js            getAllInvoices, create, getById, update, markInvoicePaid
+  │   ├── alertApi.js              getAllAlerts, create, getById, update, delete,
+  │   │                            resolve, snooze, dismiss
+  │   ├── tagApi.js                getAllTags, createTag, getById, update, delete
+  │   ├── communicationApi.js      getAllCommunications, create, getById, delete
+  │   ├── ticketApi.js             getAllTickets, create, getById, update, delete,
+  │   │                            addReply, assign, resolve, close, rate
+  │   ├── notificationApi.js       getMyNotifications, markRead, markAllRead, dismiss
+  │   ├── auditApi.js              getAllAuditLogs, getAuditLogById
+  │   └── reportApi.js             getRevenueReport, getSubscriptionReport,
+  │                                getSoftwareReport, getCommunicationReport
+  │
+  ├── store/                       Redux Toolkit
+  │   ├── index.js                 configureStore — auth reducer
+  │   └── slices/
+  │       └── authSlice.js         initializeAuth (GET /auth/me on startup),
+  │                                loginUser (POST /auth/login),
+  │                                logoutUser (POST /auth/logout)
+  │                                State: { user, isAuthenticated, initializing, loading, error }
+  │
+  ├── routes/
+  │   └── index.jsx                AppRoutes — all 14 page routes + ProtectedRoute wrapper
+  │                                ProtectedRoute checks isAuthenticated from Redux,
+  │                                returns null while initializing (no flash redirect)
+  │
+  ├── pages/
+  │   └── auth/
+  │       └── Login.jsx            ✅ Built — Zoho-style two-panel card login screen
+  │                                Left: logo + form (email + password + remember + forgot)
+  │                                Right: inline SVG dashboard illustration + tagline
+  │
+  ├── components/                  (empty — build as needed)
+  ├── hooks/                       (empty — build as needed)
+  ├── utils/                       (empty — build as needed)
+  │
+  ├── App.jsx                      <BrowserRouter> wrapping <AppRoutes />
+  ├── main.jsx                     Redux Provider, dispatches initializeAuth() before render
+  └── index.css                    @import "@heroui/react/styles" (pulls in Tailwind v4 + HeroUI theme)
+
+================================================================================
+  SECTION 4 — AUTH FLOW (critical — read before touching auth)
+================================================================================
+
+  Backend uses httpOnly cookies — NOT localStorage tokens.
+  Two cookies set on login:
+    logintoken    : access token, expires 15 min
+    refreshToken  : refresh token, expires 7 days
+
+  Frontend rules:
+  1. axiosInstance has withCredentials: true — browser sends cookies on every request
+  2. On 401: interceptor calls POST /auth/refresh (re-issues logintoken cookie), then retries
+  3. If /auth/refresh also returns 401: redirect to /login
+  4. On app startup (main.jsx): dispatch initializeAuth() → GET /auth/me
+     - If cookie still valid: populates user in Redux, isAuthenticated = true
+     - If expired/missing: isAuthenticated = false, stays on /login
+  5. Redux auth state shape:
+       { user, isAuthenticated, initializing, loading, error }
+     - initializing: true until initializeAuth() settles (prevents flash redirect on page refresh)
+  6. NEVER store tokens in localStorage or sessionStorage
+  7. logout: dispatch logoutUser() → POST /auth/logout → backend clears cookies → Redux reset
+
+  Login response body: { success, message, user: { id, name, email, role } }
+  Token is NOT in the response body — it's in the httpOnly cookie.
+
+================================================================================
+  SECTION 5 — TECH STACK (Frontend)
+================================================================================
+
+  Framework     : React 19 + Vite 8
+  UI Library    : HeroUI v3.1.0 (no HeroUIProvider needed — components work standalone)
+  CSS           : Tailwind CSS v4.3.0 via @tailwindcss/vite Vite plugin
+                  CSS import: @import "@heroui/react/styles" in index.css
+                  NO tailwind.config.js — config is CSS-based in v4
+  State         : Redux Toolkit + react-redux
+  HTTP          : Axios (withCredentials, /api/v1 base, silent refresh interceptor)
+  Routing       : React Router DOM v7
+  Animations    : Framer Motion (minimal usage only)
+  Icons         : Inline SVG (Heroicons outline style) — no icon lib installed yet
+
+  IMPORTANT: HeroUI v3 does NOT have HeroUIProvider — do not import it.
+  IMPORTANT: Tailwind v4 has no tailwind.config.js — use CSS source declarations.
+  IMPORTANT: Backend runs on port 5000. Frontend runs on port 5173 (Vite default).
+
+================================================================================
+  SECTION 6 — FEATURES IMPLEMENTED
+================================================================================
+
+  STATUS KEY: ✅ Done   🔧 In Progress   ❌ Not Started
+
+  ── AUTH ────────────────────────────────────────────────────────────────────
+  ✅ /login              Login page — Zoho-style two-panel card
+                         Connects to POST /api/v1/auth/login
+                         Handles loading, error state, navigation to /dashboard on success
+  ❌ /forgot-password    Not started
+  ❌ /reset-password/:token  Not started
+
+  ── LAYOUT ──────────────────────────────────────────────────────────────────
+  ❌ Sidebar navigation       Not started
+  ❌ Header / notification bell  Not started
+  ❌ Breadcrumbs              Not started
+
+  ── DASHBOARD ───────────────────────────────────────────────────────────────
+  ❌ /dashboard          Not started (placeholder ComingSoon route exists)
+
+  ── CUSTOMERS ───────────────────────────────────────────────────────────────
+  ❌ /customers          Not started
+  ❌ /customers/:id      Not started
+
+  ── SOFTWARES ───────────────────────────────────────────────────────────────
+  ❌ /softwares          Not started
+  ❌ /softwares/:id      Not started
+
+  ── SUBSCRIPTIONS ───────────────────────────────────────────────────────────
+  ❌ /subscriptions      Not started
+  ❌ /subscriptions/:id  Not started
+
+  ── INVOICES ────────────────────────────────────────────────────────────────
+  ❌ /invoices           Not started
+  ❌ /invoices/:id       Not started
+
+  ── ALERTS ──────────────────────────────────────────────────────────────────
+  ❌ /alerts             Not started
+
+  ── COMMUNICATIONS ──────────────────────────────────────────────────────────
+  ❌ /communications     Not started
+
+  ── SUPPORT TICKETS ─────────────────────────────────────────────────────────
+  ❌ /tickets            Not started
+  ❌ /tickets/:id        Not started
+
+  ── USERS / TEAM ────────────────────────────────────────────────────────────
+  ❌ /users              Not started
+
+  ── REPORTS ─────────────────────────────────────────────────────────────────
+  ❌ /reports            Not started
+
+  ── AUDIT LOG ───────────────────────────────────────────────────────────────
+  ❌ /audit              Not started
+
+================================================================================
+  SECTION 7 — SESSION LOG
+================================================================================
+
+  ── SESSION 1: 2026-06-10 — Project Setup + Login Screen ────────────────────
+  Date     : 2026-06-10
+  Worked on: Full frontend foundation setup + login screen
+
+  Packages installed:
+    @heroui/react@3.1.0       — UI components
+    tailwindcss@4.3.0         — CSS via @tailwindcss/vite plugin (NOT postcss)
+    @tailwindcss/vite         — Vite plugin for Tailwind v4
+    framer-motion             — minimal animations
+    @reduxjs/toolkit          — state management
+    react-redux               — React bindings
+    axios                     — HTTP client
+    react-router-dom          — routing
+
+  Files created:
+    src/api/axios.js          withCredentials, /api/v1 base, 401→refresh interceptor
+    src/api/authApi.js        6 auth endpoints
+    src/api/userApi.js        7 user endpoints
+    src/api/customerApi.js    7 customer endpoints
+    src/api/dashboardApi.js   6 dashboard endpoints
+    src/api/softwareApi.js    6 software endpoints
+    src/api/subscriptionApi.js  6 subscription endpoints
+    src/api/invoiceApi.js     5 invoice endpoints
+    src/api/alertApi.js       8 alert endpoints
+    src/api/tagApi.js         5 tag endpoints
+    src/api/communicationApi.js  4 communication endpoints
+    src/api/ticketApi.js      10 ticket endpoints
+    src/api/notificationApi.js  4 notification endpoints
+    src/api/auditApi.js       2 audit endpoints
+    src/api/reportApi.js      4 report endpoints
+    src/store/index.js        Redux store
+    src/store/slices/authSlice.js  initializeAuth + loginUser + logoutUser
+    src/routes/index.jsx      All 14 routes + ProtectedRoute
+    src/pages/auth/Login.jsx  Login screen (Zoho-style)
+
+  Files modified:
+    vite.config.js            Added @tailwindcss/vite plugin
+    src/index.css             @import "@heroui/react/styles"
+    src/App.jsx               BrowserRouter + AppRoutes
+    src/main.jsx              Redux Provider + initializeAuth() dispatch
+
+  Key discoveries:
+    - HeroUI v3 has NO HeroUIProvider — do not import it
+    - HeroUI v3 requires Tailwind CSS v4 (not v3)
+    - Backend uses httpOnly cookies, not localStorage tokens
+    - Auth response body has user object only — no token in body
+    - initializeAuth() must be dispatched before render for session restore
+
+  Next session:
+    - Build Layout: sidebar + header with notification bell
+    - Then Dashboard page
+    - Then Customers list
+
+================================================================================
+  END OF FRONTEND PLANNER
+  Update this file at the end of every session.
+================================================================================

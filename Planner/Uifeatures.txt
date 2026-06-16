@@ -1,0 +1,3 @@
+State Management -> Redux Toolkit
+API              -> Axios 
+UI Library       -> Hero UI 
