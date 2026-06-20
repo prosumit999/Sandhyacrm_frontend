@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { portalMessagesApi, portalSendMessageApi, portalTeamApi } from '../../api/portalApi'
+import { toastInfo, toastError } from '../../utils/toast'
 
 const fmtTime = d => d ? new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''
 const fmtDate = d => d ? new Date(d).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }) : ''
@@ -128,7 +129,9 @@ export default function PortalMessages() {
     try {
       await portalSendMessageApi({ text: t })
       loadMessages()
-    } catch {}
+    } catch {
+      toastError('Failed to send message')
+    }
     finally { setSending(false) }
   }
 

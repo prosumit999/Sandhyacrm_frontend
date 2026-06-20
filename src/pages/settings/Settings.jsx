@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import { getMeApi, updateMeApi, changePasswordApi } from '../../api/authApi'
 import { getInvoiceSettingsApi, updateInvoiceSettingsApi } from '../../api/settingsApi'
+import { toastSuccess, toastError } from '../../utils/toast'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 function fmt(d) {
@@ -209,8 +210,8 @@ export default function Settings() {
       const res = await updateMeApi({ name: form.name.trim(), phone: form.phone.trim() })
       const updated = res.data?.data || res.data
       setProfile(prev => ({ ...prev, ...updated }))
-      setSaveOk('Profile updated successfully.')
       setEditing(false)
+      toastSuccess('Profile updated successfully')
     } catch (err) {
       setSaveErr(err?.response?.data?.message || 'Failed to update profile.')
     } finally {
@@ -229,8 +230,8 @@ export default function Settings() {
     setPwSaving(true)
     try {
       await changePasswordApi({ currentPassword: pwForm.current, newPassword: pwForm.next })
-      setPwOk('Password changed successfully.')
       setPwForm({ current: '', next: '', confirm: '' })
+      toastSuccess('Password changed successfully')
     } catch (err) {
       setPwErr(err?.response?.data?.message || 'Failed to change password.')
     } finally {
@@ -253,7 +254,7 @@ export default function Settings() {
     try {
       const res = await updateInvoiceSettingsApi(invForm)
       setInvForm(f => ({ ...f, ...(res.data.data || {}) }))
-      setInvSaveOk('Invoice settings saved successfully.')
+      toastSuccess('Invoice settings saved')
     } catch (err) {
       setInvSaveErr(err?.response?.data?.message || 'Failed to save settings.')
     } finally {
@@ -288,7 +289,7 @@ export default function Settings() {
         emailAlertColor:  d.emailAlertColor  || '#f59e0b',
         emailFooterPhone: d.emailFooterPhone || '',
       })
-      setEmailSaveOk('Email branding saved successfully.')
+      toastSuccess('Email branding saved')
     } catch (err) {
       setEmailSaveErr(err?.response?.data?.message || 'Failed to save email branding.')
     } finally {
@@ -409,7 +410,6 @@ export default function Settings() {
                   </div>
                 </div>
 
-                {saveOk && <Alert type="success">{saveOk}</Alert>}
 
                 {/* read-only view */}
                 {!editing && (
@@ -468,7 +468,6 @@ export default function Settings() {
 
               <div style={{ padding: 20 }}>
                 <div style={{ maxWidth: 420 }}>
-                  {pwOk && <Alert type="success">{pwOk}</Alert>}
                   {pwErr && <Alert type="error">{pwErr}</Alert>}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -554,7 +553,6 @@ export default function Settings() {
                   </div>
                 ) : (
                   <>
-                    {invSaveOk && <Alert type="success">{invSaveOk}</Alert>}
                     {invSaveErr && <Alert type="error">{invSaveErr}</Alert>}
 
                     {/* Organisation Identity */}
@@ -618,7 +616,6 @@ export default function Settings() {
                   </div>
                 ) : (
                   <>
-                    {emailSaveOk  && <Alert type="success">{emailSaveOk}</Alert>}
                     {emailSaveErr && <Alert type="error">{emailSaveErr}</Alert>}
 
                     {/* ── Colours section ── */}

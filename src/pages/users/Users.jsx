@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSelector } from 'react-redux'
+import { toastSuccess } from '../../utils/toast'
 import {
   getAllUsersApi, createUserApi, updateUserApi, deleteUserApi,
   toggleUserActiveApi, getPortfolioStatsApi, getUserPortfolioApi, transferPortfolioApi,
@@ -405,7 +406,11 @@ function TeamsView({ isAdmin, allUsers }) {
 
   useEffect(() => { fetchTeams() }, [fetchTeams])
 
-  const handleModalSaved = async () => { setModal(null); await fetchTeams() }
+  const handleModalSaved = async () => {
+    const isEdit = !!modal?.team
+    setModal(null); await fetchTeams()
+    toastSuccess(isEdit ? 'Team updated' : 'Team created')
+  }
 
   const handleUpdated = (updatedTeam) => {
     setTeams(ts => ts.map(t => t._id === updatedTeam._id ? updatedTeam : t))
@@ -415,7 +420,7 @@ function TeamsView({ isAdmin, allUsers }) {
   const handleDelete = async () => {
     if (!delTarget) return
     setDelBusy(true)
-    try { await deleteTeamApi(delTarget._id); setDelTarget(null); fetchTeams() }
+    try { await deleteTeamApi(delTarget._id); setDelTarget(null); fetchTeams(); toastSuccess('Team deleted') }
     catch {}
     finally { setDelBusy(false) }
   }
@@ -633,16 +638,22 @@ function MembersView({ isAdmin, isSuperAdmin, meId }) {
     setSaving(true); setDrawerErr('')
     try {
       const body = { name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: form.phone.trim(), role: form.role, ...(form.password.trim() && { password: form.password }) }
+      const wasEdit = !!editUser
       if (editUser) { await updateUserApi(editUser._id, body) } else { await createUserApi(body) }
-      closeDrawer(); fetchUsers(editUser ? page : 1)
+      closeDrawer(); fetchUsers(wasEdit ? page : 1)
+      toastSuccess(wasEdit ? 'User updated' : 'User created')
     } catch (err) { setDrawerErr(err?.response?.data?.message || 'Failed to save user.') }
     finally { setSaving(false) }
   }
 
   const handleToggle = async () => {
     if (!toggleTarget) return
+    const willActivate = !toggleTarget.isActive
     setToggleLoading(true)
-    try { await toggleUserActiveApi(toggleTarget._id); setToggleTarget(null); fetchUsers(page) }
+    try {
+      await toggleUserActiveApi(toggleTarget._id); setToggleTarget(null); fetchUsers(page)
+      toastSuccess(willActivate ? 'User activated' : 'User deactivated')
+    }
     catch {}
     finally { setToggleLoading(false) }
   }
@@ -650,7 +661,7 @@ function MembersView({ isAdmin, isSuperAdmin, meId }) {
   const handleDelete = async () => {
     if (!deleteTarget) return
     setDeleteLoading(true)
-    try { await deleteUserApi(deleteTarget._id); setDeleteTarget(null); fetchUsers(page) }
+    try { await deleteUserApi(deleteTarget._id); setDeleteTarget(null); fetchUsers(page); toastSuccess('User deleted') }
     catch {}
     finally { setDeleteLoading(false) }
   }

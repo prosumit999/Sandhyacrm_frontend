@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState, useCallback } from 'react'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
+import { toastSuccess, toastError } from '../../utils/toast'
 import {
   getAllSoftwaresApi, createSoftwareApi, updateSoftwareApi, deleteSoftwareApi,
 } from '../../api/softwareApi'
@@ -503,7 +504,11 @@ export default function Softwares() {
 
   useEffect(() => { fetchSoftwares(1) }, [fetchSoftwares])
 
-  const handleSaved = () => { setDrawer(null); fetchSoftwares(pagination.page) }
+  const handleSaved = () => {
+    const isEdit = drawer?.mode === 'edit'
+    setDrawer(null); fetchSoftwares(pagination.page)
+    toastSuccess(isEdit ? 'Software updated' : 'Software added')
+  }
 
   const handleDelete = async () => {
     setDelBusy(true); setDelError('')
@@ -511,8 +516,10 @@ export default function Softwares() {
       await deleteSoftwareApi(delTarget._id)
       setDelTarget(null)
       fetchSoftwares(pagination.page)
+      toastSuccess('Software deleted')
     } catch (ex) {
       setDelError(ex.response?.data?.message || 'Failed to delete.')
+      toastError(ex.response?.data?.message || 'Failed to delete software')
     } finally { setDelBusy(false) }
   }
 

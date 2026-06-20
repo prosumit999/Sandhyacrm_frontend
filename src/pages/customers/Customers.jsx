@@ -6,6 +6,7 @@ import {
 } from '../../api/customerApi'
 import { getAllUsersApi } from '../../api/userApi'
 import { enablePortalAccessApi } from '../../api/portalApi'
+import { toastSuccess, toastError } from '../../utils/toast'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtDate = d => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -493,8 +494,10 @@ export default function Customers() {
   const applySearch = () => setSearch(searchInput)
 
   const handleModalSaved = () => {
+    const isEdit = modal?.mode === 'edit'
     setModal(null)
     fetchCustomers(pagination.page)
+    toastSuccess(isEdit ? 'Customer updated successfully' : 'Customer added successfully')
   }
 
   const handleDelete = async () => {
@@ -503,7 +506,10 @@ export default function Customers() {
       await deleteCustomerApi(delTarget._id)
       setDelTarget(null)
       fetchCustomers(pagination.page)
-    } catch (_) { }
+      toastSuccess('Customer deleted')
+    } catch (e) {
+      toastError(e?.response?.data?.message || 'Failed to delete customer')
+    }
     finally { setDelBusy(false) }
   }
 
@@ -641,7 +647,7 @@ export default function Customers() {
         <PortalAccessModal
           customer={portalTarget}
           onClose={() => setPortalTarget(null)}
-          onSaved={() => fetchCustomers(pagination.page)}
+          onSaved={() => { fetchCustomers(pagination.page); toastSuccess('Portal access updated') }}
         />
       )}
 

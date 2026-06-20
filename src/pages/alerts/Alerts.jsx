@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSelector } from 'react-redux'
+import { toastSuccess } from '../../utils/toast'
 import {
   getAllAlertsApi,
   createAlertApi,
@@ -379,8 +380,10 @@ export default function Alerts() {
       } else {
         await createAlertApi(body)
       }
+      const wasEdit = !!editAlert
       closeDrawer()
-      fetchAlerts(editAlert ? page : 1)
+      fetchAlerts(wasEdit ? page : 1)
+      toastSuccess(wasEdit ? 'Alert updated' : 'Alert created')
     } catch (err) {
       setDrawerErr(err?.response?.data?.message || 'Failed to save alert.')
     } finally {
@@ -396,6 +399,7 @@ export default function Alerts() {
       await resolveAlertApi(resolveTarget._id)
       setResolveTarget(null)
       fetchAlerts(page)
+      toastSuccess('Alert resolved')
     } catch {
     } finally {
       setResolveLoading(false)
@@ -410,6 +414,7 @@ export default function Alerts() {
       await snoozeAlertApi(snoozeTarget._id, { snoozedUntil: snoozeDate })
       setSnoozeTarget(null); setSnoozeDate('')
       fetchAlerts(page)
+      toastSuccess('Alert snoozed')
     } catch {
     } finally {
       setSnoozeLoading(false)
@@ -424,6 +429,7 @@ export default function Alerts() {
       await dismissAlertApi(dismissTarget._id)
       setDismissTarget(null)
       fetchAlerts(page)
+      toastSuccess('Alert dismissed')
     } catch {
     } finally {
       setDismissLoading(false)
@@ -438,6 +444,7 @@ export default function Alerts() {
       await deleteAlertApi(deleteTarget._id)
       setDeleteTarget(null)
       fetchAlerts(page)
+      toastSuccess('Alert deleted')
     } catch {
     } finally {
       setDeleteLoading(false)

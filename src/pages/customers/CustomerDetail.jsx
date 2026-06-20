@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
+import { toastSuccess } from '../../utils/toast'
 import {
   getCustomerByIdApi,
   updateCustomerApi,
@@ -864,14 +865,14 @@ export default function CustomerDetail() {
           customer={c}
           users={users}
           onClose={() => setShowEdit(false)}
-          onSaved={updated => setCustomer(updated)}
+          onSaved={updated => { setCustomer(updated); toastSuccess('Customer updated') }}
         />
       )}
       {showPortal && (
         <PortalModal
           customer={c}
           onClose={() => setShowPortal(false)}
-          onSaved={updated => setCustomer(prev => ({ ...prev, ...updated }))}
+          onSaved={updated => { setCustomer(prev => ({ ...prev, ...updated })); toastSuccess('Portal access updated') }}
         />
       )}
     </div>

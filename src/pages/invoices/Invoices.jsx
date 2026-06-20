@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
+import { toastSuccess } from '../../utils/toast'
 import {
   getAllInvoicesApi, createInvoiceApi, updateInvoiceApi, markInvoicePaidApi,
 } from '../../api/invoiceApi'
@@ -582,7 +583,13 @@ export default function Invoices() {
     setDrawer({ mode, initial })
   }
 
-  const handleSaved = () => { setDrawer(null); setMarkPaid(null); fetchInvoices(pagination.page) }
+  const handleSaved = () => {
+    const msg = markPaid
+      ? 'Invoice marked as paid'
+      : drawer?.mode === 'edit' ? 'Invoice updated' : 'Invoice created'
+    setDrawer(null); setMarkPaid(null); fetchInvoices(pagination.page)
+    toastSuccess(msg)
+  }
 
   const hasFilters = filterPayment || filterType
   const clearFilters = () => { setFilterPayment(''); setFilterType('') }

@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
+import { toastSuccess, toastError } from '../../utils/toast'
 import {
   getAllSubscriptionsApi, createSubscriptionApi,
   updateSubscriptionApi, deleteSubscriptionApi, renewSubscriptionApi,
@@ -686,12 +687,18 @@ export default function Subscriptions() {
   }
 
   const handleSaved = (invoiceNum = null) => {
+    const msg = renewSub
+      ? 'Subscription renewed'
+      : genInvoiceSub
+        ? 'Invoice generated'
+        : drawer?.mode === 'edit' ? 'Subscription updated' : 'Subscription created'
     setDrawer(null)
     setRenewSub(null)
     setGenInvoiceSub(null)
     fetchSubs(pagination.page)
     if (invoiceNum && invoiceNum !== 'manual') setCreatedInvoiceNum(invoiceNum)
     else if (invoiceNum === 'manual') setCreatedInvoiceNum('manual')
+    toastSuccess(invoiceNum && invoiceNum !== 'manual' ? `${msg} — Invoice #${invoiceNum}` : msg)
   }
 
   const handleDelete = async () => {
@@ -699,7 +706,11 @@ export default function Subscriptions() {
     try {
       await deleteSubscriptionApi(delTarget._id)
       setDelTarget(null); fetchSubs(pagination.page)
-    } catch (ex) { setDelError(ex.response?.data?.message || 'Failed to delete.') }
+      toastSuccess('Subscription deleted')
+    } catch (ex) {
+      setDelError(ex.response?.data?.message || 'Failed to delete.')
+      toastError(ex.response?.data?.message || 'Failed to delete subscription')
+    }
     finally { setDelBusy(false) }
   }
 

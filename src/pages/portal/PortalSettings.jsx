@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { usePortal } from '../../context/PortalContext'
 import { portalUpdateMeApi, portalChangePasswordApi } from '../../api/portalApi'
+import { toastSuccess } from '../../utils/toast'
 
 function fmtDate(d) {
   if (!d) return '—'
@@ -141,8 +142,8 @@ export default function PortalSettings() {
       const res = await portalUpdateMeApi({ name: form.name.trim(), phone: form.phone.trim() })
       const updated = res.data?.data
       if (updated) setCustomer(prev => ({ ...prev, ...updated }))
-      setProfOk('Profile updated successfully.')
       setEditing(false)
+      toastSuccess('Profile updated successfully')
     } catch (e) {
       setProfErr(e?.response?.data?.message || 'Failed to update profile.')
     } finally {
@@ -159,8 +160,8 @@ export default function PortalSettings() {
     setPwSaving(true)
     try {
       await portalChangePasswordApi({ currentPassword: pw.current, newPassword: pw.next })
-      setPwOk('Password changed successfully.')
       setPw({ current: '', next: '', confirm: '' })
+      toastSuccess('Password changed successfully')
     } catch (e) {
       setPwErr(e?.response?.data?.message || 'Failed to change password.')
     } finally {
@@ -189,7 +190,6 @@ export default function PortalSettings() {
             <span style={{ fontSize: 12.5, color: '#6b7280', wordBreak: 'break-all' }}>{c.email}</span>
           </div>
 
-          {profOk && <Alert type="success">{profOk}</Alert>}
 
           {!editing ? (
             <>
@@ -238,7 +238,6 @@ export default function PortalSettings() {
 
         {/* ── Change Password ── */}
         <Card title="Change Password" subtitle="At least 8 characters">
-          {pwOk && <Alert type="success">{pwOk}</Alert>}
           {pwErr && <Alert type="error">{pwErr}</Alert>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <Field label="Current password" required>

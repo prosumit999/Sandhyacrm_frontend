@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSelector } from 'react-redux'
+import { toastSuccess } from '../../utils/toast'
 import {
   getAllTicketsApi, updateTicketApi, deleteTicketApi,
   addTicketReplyApi, assignTicketApi, resolveTicketApi, closeTicketApi,
@@ -163,6 +164,7 @@ function TicketDrawer({ ticket, isAdmin, isSuperAdmin, userId, onClose, onUpdate
     try {
       await addTicketReplyApi(current._id, { message: replyText.trim() })
       setReplyText(''); refresh()
+      toastSuccess('Reply sent')
     } catch (e) { setReplyErr(e.response?.data?.message || 'Failed to send reply.') }
     finally { setReplySaving(false) }
   }
@@ -170,7 +172,7 @@ function TicketDrawer({ ticket, isAdmin, isSuperAdmin, userId, onClose, onUpdate
   const handleAssign = async () => {
     if (!assignTo) return
     setAssigning(true)
-    try { await assignTicketApi(current._id, { assignedTo: assignTo }); refresh() }
+    try { await assignTicketApi(current._id, { assignedTo: assignTo }); refresh(); toastSuccess('Ticket assigned') }
     catch {}
     finally { setAssigning(false) }
   }
@@ -178,15 +180,15 @@ function TicketDrawer({ ticket, isAdmin, isSuperAdmin, userId, onClose, onUpdate
   const handleAction = async (action) => {
     setActionBusy(action)
     try {
-      if (action === 'resolve') await resolveTicketApi(current._id)
-      else if (action === 'close') await closeTicketApi(current._id)
+      if (action === 'resolve') { await resolveTicketApi(current._id); toastSuccess('Ticket resolved') }
+      else if (action === 'close') { await closeTicketApi(current._id); toastSuccess('Ticket closed') }
       refresh()
     } catch {}
     finally { setActionBusy('') }
   }
 
   const handleDelete = async () => {
-    try { await deleteTicketApi(current._id); onDeleted(current._id); onClose() }
+    try { await deleteTicketApi(current._id); onDeleted(current._id); onClose(); toastSuccess('Ticket deleted') }
     catch {}
   }
 

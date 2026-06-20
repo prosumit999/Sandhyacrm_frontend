@@ -1,5 +1,25 @@
 @import "@heroui/react/styles";
 
+/* ── react-toastify: brand-blue success toasts ─────────────────────────────── */
+:root {
+  --toastify-color-success:          #1a73e8;
+  --toastify-icon-color-success:     #1a73e8;
+  --toastify-color-progress-success: #1a73e8;
+  --toastify-font-family:            'Plus Jakarta Sans', system-ui, sans-serif;
+  --toastify-z-index:                9999;
+}
+.Toastify__toast {
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  min-height: 48px;
+  padding: 10px 14px;
+}
+.Toastify__toast-body {
+  gap: 10px;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }

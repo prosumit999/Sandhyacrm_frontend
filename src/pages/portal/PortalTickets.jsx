@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { portalTicketsApi, portalCreateTicketApi, portalSubscriptionsApi } from '../../api/portalApi'
+import { toastSuccess } from '../../utils/toast'
 
 const fmtDate = d => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
@@ -61,6 +62,7 @@ export default function PortalTickets() {
       setShowForm(false)
       setForm({ title: '', type: '', description: '', priority: 'Medium', software: '' })
       load()
+      toastSuccess('Support ticket submitted')
     } catch (e) {
       setErr(e.response?.data?.message || 'Failed to create ticket.')
     } finally {
