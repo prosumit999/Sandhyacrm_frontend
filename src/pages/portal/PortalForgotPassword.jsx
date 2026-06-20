@@ -5,10 +5,11 @@ import logoSvg from '../../assets/logosvg.svg'
 
 export default function PortalForgotPassword() {
   const navigate = useNavigate()
-  const [email,   setEmail]   = useState('')
-  const [loading, setLoading] = useState(false)
-  const [sent,    setSent]    = useState(false)
-  const [error,   setError]   = useState('')
+  const [email,    setEmail]    = useState('')
+  const [loading,  setLoading]  = useState(false)
+  const [sent,     setSent]     = useState(false)
+  const [error,    setError]    = useState('')
+  const [devReset, setDevReset] = useState(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -16,7 +17,8 @@ export default function PortalForgotPassword() {
     setError('')
     setLoading(true)
     try {
-      await portalForgotPasswordApi({ email: email.trim() })
+      const res = await portalForgotPasswordApi({ email: email.trim() })
+      if (res.data?.resetUrl) setDevReset(res.data.resetUrl)
       setSent(true)
     } catch (err) {
       setError(err?.response?.data?.message || 'Something went wrong. Please try again.')
@@ -119,6 +121,12 @@ export default function PortalForgotPassword() {
               >
                 Try a different email
               </button>
+              {devReset && (
+                <div style={{ marginTop: '14px', background: '#fef9c3', border: '1px solid #fde047', borderRadius: '8px', padding: '10px 14px', fontSize: '12px', color: '#713f12', textAlign: 'left' }}>
+                  <strong>Dev mode:</strong> SMTP not active.{' '}
+                  <a href={devReset} style={{ color: '#1a73e8', wordBreak: 'break-all' }}>Click here to reset password</a>
+                </div>
+              )}
             </div>
           )}
 

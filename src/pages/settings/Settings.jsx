@@ -138,12 +138,17 @@ const NAV = [
     id: 'invoice', label: 'Invoice Settings', adminOnly: true,
     icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>,
   },
+  {
+    id: 'email', label: 'Email Branding', superOnly: true,
+    icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+  },
 ]
 
 // ══════════════════════════════════════════════════════════════════════════════
 export default function Settings() {
   const { user: authUser } = useSelector(s => s.auth)
-  const isAdmin = ['Admin', 'SuperAdmin'].includes(authUser?.role)
+  const isAdmin      = ['Admin', 'SuperAdmin'].includes(authUser?.role)
+  const isSuperAdmin = authUser?.role === 'SuperAdmin'
 
   const [activeTab, setActiveTab] = useState('profile')
   const [profile,   setProfile]   = useState(null)
@@ -170,6 +175,14 @@ export default function Settings() {
   const [invSaving,  setInvSaving]  = useState(false)
   const [invSaveOk,  setInvSaveOk]  = useState('')
   const [invSaveErr, setInvSaveErr] = useState('')
+
+  // email branding
+  const BLANK_EMAIL = { emailBrandColor: '#1a73e8', emailAlertColor: '#f59e0b', emailFooterPhone: '' }
+  const [emailForm,    setEmailForm]    = useState(BLANK_EMAIL)
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailSaving,  setEmailSaving]  = useState(false)
+  const [emailSaveOk,  setEmailSaveOk]  = useState('')
+  const [emailSaveErr, setEmailSaveErr] = useState('')
 
   useEffect(() => {
     getMeApi()
@@ -248,6 +261,41 @@ export default function Settings() {
     }
   }
 
+  // ── Email branding handlers ────────────────────────────────────────────────
+  useEffect(() => {
+    if (activeTab !== 'email' || !isSuperAdmin) return
+    setEmailLoading(true); setEmailSaveOk(''); setEmailSaveErr('')
+    getInvoiceSettingsApi()
+      .then(r => {
+        const d = r.data.data || {}
+        setEmailForm({
+          emailBrandColor:  d.emailBrandColor  || '#1a73e8',
+          emailAlertColor:  d.emailAlertColor  || '#f59e0b',
+          emailFooterPhone: d.emailFooterPhone || '',
+        })
+      })
+      .catch(() => setEmailSaveErr('Failed to load email settings.'))
+      .finally(() => setEmailLoading(false))
+  }, [activeTab, isSuperAdmin])
+
+  const handleEmailSave = async () => {
+    setEmailSaving(true); setEmailSaveOk(''); setEmailSaveErr('')
+    try {
+      const res = await updateInvoiceSettingsApi(emailForm)
+      const d = res.data.data || {}
+      setEmailForm({
+        emailBrandColor:  d.emailBrandColor  || '#1a73e8',
+        emailAlertColor:  d.emailAlertColor  || '#f59e0b',
+        emailFooterPhone: d.emailFooterPhone || '',
+      })
+      setEmailSaveOk('Email branding saved successfully.')
+    } catch (err) {
+      setEmailSaveErr(err?.response?.data?.message || 'Failed to save email branding.')
+    } finally {
+      setEmailSaving(false)
+    }
+  }
+
   // ── loading ────────────────────────────────────────────────────────────────
   if (loading) return (
     <div style={{ fontFamily: 'system-ui,sans-serif' }}>
@@ -307,7 +355,7 @@ export default function Settings() {
             </div>
           </div>
           <div style={{ padding: '8px 0' }}>
-            {NAV.filter(n => !n.adminOnly || isAdmin).map(n => {
+            {NAV.filter(n => (!n.adminOnly || isAdmin) && (!n.superOnly || isSuperAdmin)).map(n => {
               const active = activeTab === n.id
               return (
                 <button key={n.id} onClick={() => switchTab(n.id)}
@@ -548,6 +596,128 @@ export default function Settings() {
                       style={{ background: invSaving ? '#93c5fd' : '#1a73e8', color: 'white', border: 'none', borderRadius: 6, padding: '8px 22px', fontSize: 13, fontWeight: 600, cursor: invSaving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 7 }}>
                       {invSaving && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" style={{ animation: 'spin 0.7s linear infinite' }}><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>}
                       {invSaving ? 'Saving…' : 'Save Invoice Settings'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════ EMAIL BRANDING ══════════════════════ */}
+          {activeTab === 'email' && isSuperAdmin && (
+            <div>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>Email Branding</div>
+                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Customize the colours and contact info shown in all outgoing emails</div>
+              </div>
+
+              <div style={{ padding: 20 }}>
+                {emailLoading ? (
+                  <div style={{ display: 'grid', gap: 14 }}>
+                    {[...Array(3)].map((_, i) => <div key={i}><Skeleton w="100%" h={40} /></div>)}
+                  </div>
+                ) : (
+                  <>
+                    {emailSaveOk  && <Alert type="success">{emailSaveOk}</Alert>}
+                    {emailSaveErr && <Alert type="error">{emailSaveErr}</Alert>}
+
+                    {/* ── Colours section ── */}
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12 }}>Email Header Colours</div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+
+                      {/* Brand colour */}
+                      <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 14 }}>
+                        <Label>Brand / Account Creation Colour</Label>
+                        <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 10 }}>
+                          Used on welcome, invoice, subscription, portal, and payment emails.
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ position: 'relative', flexShrink: 0 }}>
+                            <input
+                              type="color"
+                              value={emailForm.emailBrandColor}
+                              onChange={e => setEmailForm(f => ({ ...f, emailBrandColor: e.target.value }))}
+                              style={{ width: 44, height: 44, border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer', padding: 2, background: 'none' }}
+                            />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{emailForm.emailBrandColor.toUpperCase()}</div>
+                            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>Click swatch to change</div>
+                          </div>
+                        </div>
+                        {/* Mini preview */}
+                        <div style={{ marginTop: 12, borderRadius: 6, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                          <div style={{ background: emailForm.emailBrandColor, padding: '8px 12px' }}>
+                            <span style={{ color: '#fff', fontWeight: 700, fontSize: 12, fontFamily: 'Arial,sans-serif' }}>Your Company Name</span>
+                          </div>
+                          <div style={{ background: '#fff', padding: '8px 12px' }}>
+                            <div style={{ fontSize: 11, color: '#374151', fontFamily: 'Arial,sans-serif' }}>Dear Customer, your account is ready…</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Alert colour */}
+                      <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 14 }}>
+                        <Label>Warning / Alert Colour</Label>
+                        <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 10 }}>
+                          Used on Info-level alert emails. Urgent alerts stay red, Warning alerts stay yellow.
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ position: 'relative', flexShrink: 0 }}>
+                            <input
+                              type="color"
+                              value={emailForm.emailAlertColor}
+                              onChange={e => setEmailForm(f => ({ ...f, emailAlertColor: e.target.value }))}
+                              style={{ width: 44, height: 44, border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer', padding: 2, background: 'none' }}
+                            />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{emailForm.emailAlertColor.toUpperCase()}</div>
+                            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>Click swatch to change</div>
+                          </div>
+                        </div>
+                        {/* Mini preview */}
+                        <div style={{ marginTop: 12, borderRadius: 6, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                          <div style={{ background: emailForm.emailAlertColor, padding: '8px 12px' }}>
+                            <span style={{ color: '#fff', fontWeight: 700, fontSize: 12, fontFamily: 'Arial,sans-serif' }}>Your Company Name</span>
+                          </div>
+                          <div style={{ background: '#fff', padding: '8px 12px' }}>
+                            <div style={{ fontSize: 11, color: '#374151', fontFamily: 'Arial,sans-serif' }}>[Info] Action required for your account…</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── Footer section ── */}
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12, paddingTop: 8, borderTop: '1px solid #f3f4f6' }}>Email Footer</div>
+                    <div style={{ maxWidth: 380, marginBottom: 24 }}>
+                      <Label>Company Phone Number</Label>
+                      <Inp
+                        value={emailForm.emailFooterPhone}
+                        onChange={e => setEmailForm(f => ({ ...f, emailFooterPhone: e.target.value }))}
+                        placeholder="+91 98765 43210"
+                      />
+                      <div style={{ fontSize: 11.5, color: '#9ca3af', marginTop: 5 }}>
+                        Appears at the bottom of every outgoing email alongside the company name and email address. Leave blank to omit.
+                      </div>
+                    </div>
+
+                    {/* Footer preview */}
+                    <div style={{ maxWidth: 500, border: '1px solid #e5e7eb', borderRadius: 6, padding: '10px 14px', background: '#f9fafb', marginBottom: 20 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>Footer Preview</div>
+                      <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 8 }}>
+                        <span style={{ color: '#9ca3af', fontSize: 12, fontFamily: 'Arial,sans-serif' }}>
+                          Your Company &nbsp;|&nbsp; company@example.com
+                          {emailForm.emailFooterPhone ? <> &nbsp;|&nbsp; {emailForm.emailFooterPhone}</> : null}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button onClick={handleEmailSave} disabled={emailSaving}
+                      style={{ background: emailSaving ? '#93c5fd' : '#1a73e8', color: 'white', border: 'none', borderRadius: 6, padding: '8px 22px', fontSize: 13, fontWeight: 600, cursor: emailSaving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 7 }}>
+                      {emailSaving && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" style={{ animation: 'spin 0.7s linear infinite' }}><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>}
+                      {emailSaving ? 'Saving…' : 'Save Email Branding'}
                     </button>
                   </>
                 )}

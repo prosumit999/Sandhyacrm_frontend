@@ -4,8 +4,6 @@ import { useSelector } from 'react-redux'
 import {
   getAllInvoicesApi, createInvoiceApi, updateInvoiceApi, markInvoicePaidApi,
 } from '../../api/invoiceApi'
-import { downloadInvoicePdf } from '../../utils/invoicePdf'
-import { getInvoiceSettingsApi } from '../../api/settingsApi'
 import { getAllCustomersApi } from '../../api/customerApi'
 import { getCustomerSubscriptionsApi } from '../../api/customerApi'
 
@@ -34,7 +32,6 @@ const IC = {
   user:     'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z',
   calendar: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
   info:     'M12 16v-4M12 8h.01M22 12A10 10 0 112 12a10 10 0 0120 0z',
-  download: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4',
 }
 
 // ── Badge configs ─────────────────────────────────────────────────────────────
@@ -526,7 +523,6 @@ function InvoiceCard({ inv, isAdmin, onView, onMarkPaid, onEdit }) {
         {isAdmin && isPending && (
           <ActionBtn icon={IC.edit} title="Edit Invoice" onClick={() => onEdit(inv)} />
         )}
-        <ActionBtn icon={IC.download} title="Download PDF" onClick={() => downloadInvoicePdf(inv, orgSettings)} color="#374151" bg="#f3f4f6" />
       </div>
     </div>
   )
@@ -553,9 +549,6 @@ export default function Invoices() {
   const [drawer,   setDrawer]   = useState(null)
   const [markPaid, setMarkPaid] = useState(null)
 
-  // Org settings for PDF generation
-  const [orgSettings, setOrgSettings] = useState({})
-
   // Dropdown data (loaded lazily when drawer opens)
   const [customers, setCustomers] = useState([])
 
@@ -574,7 +567,6 @@ export default function Invoices() {
 
   useEffect(() => {
     fetchInvoices(1)
-    getInvoiceSettingsApi().then(r => setOrgSettings(r.data.data || {})).catch(() => {})
   }, [fetchInvoices])
 
   const loadDropdowns = useCallback(async () => {
@@ -731,8 +723,7 @@ export default function Invoices() {
                           {isAdmin && inv.paymentStatus === 'Pending' && (
                             <ActionBtn icon={IC.edit} title="Edit Invoice" onClick={() => openDrawer('edit', inv)} />
                           )}
-                          <ActionBtn icon={IC.download} title="Download PDF" onClick={() => downloadInvoicePdf(inv, orgSettings)} color="#374151" bg="#f3f4f6" />
-                        </div>
+                                          </div>
                       </td>
                     </tr>
                   ))

@@ -357,18 +357,27 @@ function buildHTML(inv, org = {}) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Public API
+//  Uses a Blob URL opened as a new TAB (not a popup window).
+//  Blob-URL tabs are never blocked by popup blockers.
 // =============================================================================
 export function downloadInvoicePdf(inv, orgSettings = {}) {
   const html = buildHTML(inv, orgSettings)
-  const win  = window.open('', '_blank', 'width=820,height=1000,scrollbars=yes')
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+  const url  = URL.createObjectURL(blob)
+
+  // Open as a tab (no width/height = tab, not popup)
+  const win = window.open(url, '_blank')
+
   if (!win) {
-    alert('Popup blocked. Please allow popups for this site to download invoices.')
-    return
+    // Last-resort fallback: simulate an anchor click
+    const a = Object.assign(document.createElement('a'), {
+      href: url, target: '_blank', rel: 'noopener noreferrer',
+    })
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
-  win.document.open()
-  win.document.write(html)
-  win.document.close()
-  win.focus()
-  // Auto-trigger print after fonts/styles settle
-  setTimeout(() => win.print(), 600)
+
+  // Revoke blob URL after a minute (print dialog keeps the page alive)
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }

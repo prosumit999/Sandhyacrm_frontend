@@ -109,6 +109,7 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [sent, setSent] = useState(false)
+  const [devToken, setDevToken] = useState(null)
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
@@ -116,7 +117,8 @@ export default function ForgotPassword() {
     setError(null)
     setLoading(true)
     try {
-      await forgotPasswordApi(email)
+      const res = await forgotPasswordApi(email)
+      if (res.data?.resetToken) setDevToken(res.data.resetToken)
       setSent(true)
     } catch (err) {
       setError(err.response?.data?.message || 'Something went wrong. Please try again.')
@@ -216,6 +218,14 @@ export default function ForgotPassword() {
                   Try again
                 </button>
               </p>
+              {devToken && (
+                <div style={{ marginTop: '14px', background: '#fef9c3', border: '1px solid #fde047', borderRadius: '6px', padding: '10px 14px', fontSize: '12px', color: '#713f12' }}>
+                  <strong>Dev mode:</strong> Email not sent via SMTP.{' '}
+                  <a href={`/reset-password/${devToken}`} style={{ color: '#1a73e8', wordBreak: 'break-all' }}>
+                    Click here to reset password
+                  </a>
+                </div>
+              )}
             </motion.div>
           )}
 

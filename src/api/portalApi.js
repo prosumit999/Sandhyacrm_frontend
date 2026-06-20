@@ -25,6 +25,7 @@ export const portalMessagesApi     = ()        => portalAxios.get('/portal/messa
 export const portalSendMessageApi  = (data)   => portalAxios.post('/portal/messages', data)
 export const portalUnreadCountApi  = ()        => portalAxios.get('/portal/messages/unread')
 export const portalAllSoftwaresApi      = ()        => portalAxios.get('/softwares')
+export const portalOrgSettingsApi       = ()        => portalAxios.get('/portal/org-settings')
 export const portalUpdateMeApi          = (data)   => portalAxios.put('/portal/auth/me', data)
 export const portalChangePasswordApi    = (data)   => portalAxios.put('/portal/auth/change-password', data)
 

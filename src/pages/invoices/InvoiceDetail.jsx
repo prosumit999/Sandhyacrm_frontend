@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { getInvoiceByIdApi, updateInvoiceApi, markInvoicePaidApi } from '../../api/invoiceApi'
+import { getInvoiceSettingsApi } from '../../api/settingsApi'
+import { downloadInvoicePdf } from '../../utils/invoicePdf'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt       = d => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -200,17 +202,22 @@ export default function InvoiceDetail() {
   const { user }  = useSelector(s => s.auth)
   const isAdmin   = ['Admin', 'SuperAdmin'].includes(user?.role)
 
-  const [inv,       setInv]       = useState(null)
-  const [loading,   setLoading]   = useState(true)
-  const [error,     setError]     = useState('')
-  const [showPaid,  setShowPaid]  = useState(false)
-  const [showEdit,  setShowEdit]  = useState(false)
+  const [inv,         setInv]         = useState(null)
+  const [loading,     setLoading]     = useState(true)
+  const [error,       setError]       = useState('')
+  const [showPaid,    setShowPaid]    = useState(false)
+  const [showEdit,    setShowEdit]    = useState(false)
+  const [orgSettings, setOrgSettings] = useState({})
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
     try {
-      const res = await getInvoiceByIdApi(id)
-      setInv(res.data.data)
+      const [invRes, orgRes] = await Promise.all([
+        getInvoiceByIdApi(id),
+        getInvoiceSettingsApi().catch(() => ({ data: { data: {} } })),
+      ])
+      setInv(invRes.data.data)
+      setOrgSettings(orgRes.data?.data || {})
     } catch (e) { setError(e.response?.data?.message || 'Invoice not found') }
     finally { setLoading(false) }
   }, [id])
@@ -231,7 +238,7 @@ export default function InvoiceDetail() {
 
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif", color: '#111827', maxWidth: 860, margin: '0 auto' }}>
-      <style>{`@keyframes sk { from{opacity:1} to{opacity:0.4} } @media print { .no-print { display: none !important } }`}</style>
+      <style>{`@keyframes sk { from{opacity:1} to{opacity:0.4} }`}</style>
 
       {/* Breadcrumb */}
       <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
@@ -257,10 +264,11 @@ export default function InvoiceDetail() {
           )}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => window.print()}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'white', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 12.5, cursor: 'pointer', color: '#374151', fontFamily: 'inherit' }}
+          <button onClick={() => iv && downloadInvoicePdf(iv, orgSettings)}
+            disabled={!iv}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'white', border: '1px solid #d1d5db', borderRadius: 7, fontSize: 12.5, cursor: iv ? 'pointer' : 'default', color: '#374151', fontFamily: 'inherit' }}
             onMouseEnter={e => e.currentTarget.style.borderColor = '#1a73e8'} onMouseLeave={e => e.currentTarget.style.borderColor = '#d1d5db'}>
-            <Ic d={IC.print} size={13} color="currentColor" /> Print
+            <Ic d={IC.print} size={13} color="currentColor" /> Print / PDF
           </button>
           {canEdit && (
             <button onClick={() => setShowEdit(true)}
