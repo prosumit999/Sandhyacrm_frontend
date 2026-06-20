@@ -5,12 +5,6 @@ import { usePortal } from '../../context/PortalContext'
 
 const fmtINR = n => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0)
 
-const Icon = ({ d, size = 20 }) => (
-  <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-    <path strokeLinecap="round" strokeLinejoin="round" d={d} />
-  </svg>
-)
-
 const IC = {
   software: 'M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18',
   invoices: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
@@ -20,36 +14,62 @@ const IC = {
   arrow:    'M13 7l5 5m0 0l-5 5m5-5H6',
 }
 
-function StatCard({ icon, label, value, sub, to }) {
+function StatCard({ icon, label, value, sub, to, color = '#1a73e8', badge }) {
   const navigate = useNavigate()
   const [hov, setHov] = useState(false)
+  const bg  = color + '12'
+  const bdr = color + '30'
   return (
     <div
       onClick={() => to && navigate(to)}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        background: 'white', border: '1px solid gainsboro', borderRadius: '8px',
-        padding: '22px 24px', cursor: to ? 'pointer' : 'default',
-        boxShadow: hov ? '0 4px 18px rgba(0,0,0,0.07)' : '0 1px 4px rgba(0,0,0,0.04)',
-        transition: 'box-shadow 0.15s, transform 0.15s',
-        transform: hov && to ? 'translateY(-1px)' : 'none',
+        background: 'white',
+        border: `1px solid ${hov ? bdr : 'gainsboro'}`,
+        borderRadius: '10px',
+        padding: '20px 22px',
+        cursor: to ? 'pointer' : 'default',
+        boxShadow: hov ? `0 4px 18px ${color}18` : '0 1px 4px rgba(0,0,0,0.04)',
+        transition: 'all 0.15s',
+        transform: hov && to ? 'translateY(-2px)' : 'none',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-        <div style={{ color: '#94a3b8' }}><Icon d={IC[icon]} size={20} /></div>
-        {to && <div style={{ color: '#1a73e8', opacity: hov ? 1 : 0, transition: 'opacity 0.15s' }}><Icon d={IC.arrow} size={16} /></div>}
+      {/* Subtle colour accent bar at top */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: color, borderRadius: '10px 10px 0 0' }} />
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
+        <div style={{ width: '38px', height: '38px', borderRadius: '9px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg width={20} height={20} fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth={1.7}>
+            <path strokeLinecap="round" strokeLinejoin="round" d={IC[icon]} />
+          </svg>
+        </div>
+        {badge > 0 && (
+          <span style={{ background: color, color: 'white', fontSize: '10px', fontWeight: 700, borderRadius: '10px', padding: '2px 7px', flexShrink: 0 }}>
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
+        {to && !badge && (
+          <svg width={14} height={14} fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth={2} style={{ opacity: hov ? 0.7 : 0, transition: 'opacity 0.15s', flexShrink: 0, marginTop: '2px' }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d={IC.arrow} />
+          </svg>
+        )}
       </div>
-      <div style={{ fontSize: '28px', fontWeight: 700, color: '#0f172a', lineHeight: 1, marginBottom: '6px' }}>{value}</div>
+
+      <div style={{ fontSize: '30px', fontWeight: 800, color: '#0f172a', lineHeight: 1, marginBottom: '5px', letterSpacing: '-1px' }}>
+        {value ?? '—'}
+      </div>
       <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>{label}</div>
-      {sub && <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{sub}</div>}
+      {sub && <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '4px' }}>{sub}</div>}
     </div>
   )
 }
 
 export default function PortalDashboard() {
   const { customer } = usePortal()
-  const [data, setData]     = useState(null)
+  const [data,    setData]    = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -68,9 +88,19 @@ export default function PortalDashboard() {
     </div>
   )
 
+  const activeSubs    = data?.subscriptions?.active  ?? '—'
+  const totalSubs     = data?.subscriptions?.total   ?? 0
+  const totalInvoices = data?.invoices?.total        ?? '—'
+  const pendingInv    = data?.invoices?.pending      ?? 0
+  const openAlerts    = data?.alerts?.total          ?? '—'
+  const urgentAlerts  = data?.alerts?.urgent         ?? 0
+  const openTickets   = data?.tickets?.open          ?? '—'
+  const totalTickets  = data?.tickets?.total         ?? 0
+  const unreadMsgs    = data?.unreadMessages         ?? '—'
+
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
-      {/* Page header */}
+      {/* Header */}
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>
           Welcome back, {customer?.name?.split(' ')[0]}
@@ -78,54 +108,96 @@ export default function PortalDashboard() {
         <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>{today}</p>
       </div>
 
-      {/* Stats grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-        <StatCard icon="software" label="Active Subscriptions"  value={data?.activeSubscriptions  ?? '—'} to="/portal/subscriptions" />
-        <StatCard icon="invoices" label="Total Invoices"        value={data?.totalInvoices         ?? '—'} to="/portal/invoices"      />
-        <StatCard icon="alerts"   label="Open Alerts"           value={data?.urgentAlerts          ?? '—'} to="/portal/alerts"        />
-        <StatCard icon="tickets"  label="Open Tickets"          value={data?.openTickets           ?? '—'} to="/portal/tickets"       />
-        <StatCard icon="messages" label="Unread Messages"       value={data?.unreadMessages        ?? '—'} to="/portal/messages"      />
+      {/* Metric cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+        <StatCard
+          icon="software"
+          label="Active Subscriptions"
+          value={activeSubs}
+          sub={totalSubs > 0 ? `${totalSubs} total subscription${totalSubs !== 1 ? 's' : ''}` : undefined}
+          to="/portal/subscriptions"
+          color="#16a34a"
+        />
+        <StatCard
+          icon="invoices"
+          label="Total Invoices"
+          value={totalInvoices}
+          sub={pendingInv > 0 ? `${pendingInv} pending payment` : 'All paid'}
+          to="/portal/invoices"
+          color="#1a73e8"
+        />
+        <StatCard
+          icon="alerts"
+          label="Open Alerts"
+          value={openAlerts}
+          sub={urgentAlerts > 0 ? `${urgentAlerts} urgent / warning` : 'No urgent alerts'}
+          to="/portal/alerts"
+          color={urgentAlerts > 0 ? '#dc2626' : '#d97706'}
+          badge={urgentAlerts > 0 ? urgentAlerts : 0}
+        />
+        <StatCard
+          icon="tickets"
+          label="Open Tickets"
+          value={openTickets}
+          sub={totalTickets > 0 ? `${totalTickets} total ticket${totalTickets !== 1 ? 's' : ''}` : 'No tickets yet'}
+          to="/portal/tickets"
+          color="#ea580c"
+          badge={typeof openTickets === 'number' && openTickets > 0 ? openTickets : 0}
+        />
+        <StatCard
+          icon="messages"
+          label="Unread Messages"
+          value={unreadMsgs}
+          sub={typeof unreadMsgs === 'number' && unreadMsgs > 0 ? 'Tap to read your messages' : 'No unread messages'}
+          to="/portal/messages"
+          color="#7c3aed"
+          badge={typeof unreadMsgs === 'number' && unreadMsgs > 0 ? unreadMsgs : 0}
+        />
       </div>
 
-      {/* Recent activity */}
-      {data?.recentInvoice && (
-        <div style={{ background: 'white', border: '1px solid gainsboro', borderRadius: '8px', padding: '22px 24px', marginBottom: '16px' }}>
-          <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#b0bec5', textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '14px' }}>
-            Latest Invoice
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-            <div>
-              <div style={{ fontSize: '14.5px', fontWeight: 600, color: '#0f172a' }}>
-                #{data.recentInvoice.invoiceNumber}
-              </div>
-              <div style={{ fontSize: '12.5px', color: '#94a3b8', marginTop: '3px' }}>
-                {data.recentInvoice.paymentStatus}
-              </div>
-            </div>
-            <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
-              {fmtINR(data.recentInvoice.totalAmount)}
-            </div>
-          </div>
+      {/* Quick links */}
+      <div style={{ background: 'white', border: '1px solid gainsboro', borderRadius: '10px', padding: '20px 22px' }}>
+        <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#b0bec5', textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '16px' }}>
+          Quick Access
         </div>
-      )}
-
-      {data?.renewingSoon?.length > 0 && (
-        <div style={{ background: 'white', border: '1px solid gainsboro', borderRadius: '8px', padding: '22px 24px' }}>
-          <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#b0bec5', textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '14px' }}>
-            Renewing Soon
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {data.renewingSoon.map((sub, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < data.renewingSoon.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                <span style={{ fontSize: '14px', color: '#334155', fontWeight: 500 }}>{sub.softwares?.name || '—'}</span>
-                <span style={{ fontSize: '13px', color: '#64748b' }}>
-                  {sub.renewalDate ? new Date(sub.renewalDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                </span>
-              </div>
-            ))}
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px' }}>
+          {[
+            { to: '/portal/subscriptions', label: 'My Software',     icon: 'software', color: '#16a34a' },
+            { to: '/portal/invoices',      label: 'Invoices',        icon: 'invoices', color: '#1a73e8' },
+            { to: '/portal/alerts',        label: 'Alerts',          icon: 'alerts',   color: '#d97706' },
+            { to: '/portal/tickets',       label: 'Support Tickets', icon: 'tickets',  color: '#ea580c' },
+            { to: '/portal/messages',      label: 'Team Messages',   icon: 'messages', color: '#7c3aed' },
+          ].map(item => (
+            <QuickLink key={item.to} {...item} />
+          ))}
         </div>
-      )}
+      </div>
     </div>
+  )
+}
+
+function QuickLink({ to, label, icon, color }) {
+  const navigate = useNavigate()
+  const [hov, setHov] = useState(false)
+  return (
+    <button
+      onClick={() => navigate(to)}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '9px',
+        padding: '10px 13px', border: `1px solid ${hov ? color + '50' : '#e2e8f0'}`,
+        borderRadius: '8px', background: hov ? color + '08' : 'white',
+        cursor: 'pointer', width: '100%', textAlign: 'left',
+        transition: 'all 0.13s', fontFamily: 'inherit',
+      }}
+    >
+      <div style={{ width: '28px', height: '28px', borderRadius: '7px', background: color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <svg width={15} height={15} fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d={IC[icon]} />
+        </svg>
+      </div>
+      <span style={{ fontSize: '13px', fontWeight: 600, color: hov ? color : '#334155' }}>{label}</span>
+    </button>
   )
 }

@@ -1,8 +1,8 @@
 import axiosInstance from './axios'
 
 // GET /api/v1/notifications  (verifyJWT)
-export const getMyNotificationsApi = () =>
-  axiosInstance.get('/notifications')
+export const getMyNotificationsApi = (params = { limit: 20 }) =>
+  axiosInstance.get('/notifications', { params })
 
 // PATCH /api/v1/notifications/mark-all-read  (verifyJWT)
 export const markAllNotificationsReadApi = () =>

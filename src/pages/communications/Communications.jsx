@@ -10,6 +10,8 @@ import {
   searchShareSubscriptionsApi,
   searchShareAlertsApi,
 } from '../../api/chatApi'
+import { adminGetPortalMsgsApi, adminSendPortalMsgApi } from '../../api/portalApi'
+import { getAllCustomersApi } from '../../api/customerApi'
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -558,6 +560,18 @@ export default function Communications() {
   const [allConvs,      setAllConvs]      = useState([])
   const [allConvsLoading, setAllConvsLoading] = useState(false)
 
+  // ── Customer Inbox mode ───────────────────────────────────────────────────
+  const [chatMode,       setChatMode]       = useState('team')  // 'team' | 'customer'
+  const [custList,       setCustList]       = useState([])
+  const [custSearch,     setCustSearch]     = useState('')
+  const [custLoading,    setCustLoading]    = useState(false)
+  const [selCust,        setSelCust]        = useState(null)
+  const [custMsgs,       setCustMsgs]       = useState([])
+  const [custMsgLoading, setCustMsgLoading] = useState(false)
+  const [custText,       setCustText]       = useState('')
+  const [custSending,    setCustSending]    = useState(false)
+  const custBottomRef = useRef(null)
+
   const activeConv    = conversations.find(c => c._id === activeConvId) || null
   const socket        = socketRef?.current
 
@@ -738,6 +752,62 @@ export default function Communications() {
     } finally { setCreating(false) }
   }, [ncSelected, ncTab, ncGroupName, socket, setConversations])
 
+  // ── customer inbox ────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (chatMode !== 'customer' || custList.length > 0) return
+    setCustLoading(true)
+    getAllCustomersApi({ limit: 200 })
+      .then(r => setCustList(r.data.data || r.data?.customers || []))
+      .catch(() => {})
+      .finally(() => setCustLoading(false))
+  }, [chatMode, custList.length])
+
+  useEffect(() => {
+    if (!selCust) return
+    setCustMsgLoading(true)
+    adminGetPortalMsgsApi(selCust._id)
+      .then(r => setCustMsgs(r.data.data || []))
+      .catch(() => setCustMsgs([]))
+      .finally(() => setCustMsgLoading(false))
+  }, [selCust])
+
+  // Auto-poll for new customer messages: 3s when online, 15s when offline
+  useEffect(() => {
+    if (!selCust) return
+    let id
+    const poll = async () => {
+      try {
+        const r = await adminGetPortalMsgsApi(selCust._id)
+        setCustMsgs(r.data.data || [])
+      } catch {}
+      id = setTimeout(poll, navigator.onLine ? 3000 : 15000)
+    }
+    id = setTimeout(poll, navigator.onLine ? 3000 : 15000)
+    return () => clearTimeout(id)
+  }, [selCust])
+
+  useEffect(() => {
+    custBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [custMsgs])
+
+  const sendCustMessage = useCallback(async () => {
+    if (!custText.trim() || !selCust || custSending) return
+    const t = custText.trim()
+    setCustText('')
+    setCustSending(true)
+    try {
+      await adminSendPortalMsgApi(selCust._id, { text: t })
+      const r = await adminGetPortalMsgsApi(selCust._id)
+      setCustMsgs(r.data.data || [])
+    } catch {}
+    finally { setCustSending(false) }
+  }, [custText, selCust, custSending])
+
+  const filteredCustList = custList.filter(c =>
+    !custSearch || (c.name || c.businessName || '').toLowerCase().includes(custSearch.toLowerCase())
+  )
+
   // ── computed ──────────────────────────────────────────────────────────────
 
   const sourceConvs   = (isAdmin && adminView) ? allConvs : conversations
@@ -839,16 +909,30 @@ export default function Communications() {
         {/* ── LEFT SIDEBAR ──────────────────────────────────────────── */}
         <div style={S.sidebar}>
           <div style={S.sidebarTop}>
+            {/* Mode toggle: Team / Customer Inbox */}
+            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '10px', padding: '3px', gap: '2px', marginBottom: '10px' }}>
+              {[['team', 'Team Chat'], ['customer', 'Customer Inbox']].map(([mode, label]) => (
+                <button key={mode} onClick={() => setChatMode(mode)} style={{
+                  flex: 1, padding: '6px 0', border: 'none', borderRadius: '8px', cursor: 'pointer',
+                  fontSize: '12px', fontWeight: chatMode === mode ? 700 : 400,
+                  background: chatMode === mode ? '#1a73e8' : 'transparent',
+                  color: chatMode === mode ? '#fff' : '#64748b',
+                }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
             <div style={S.sidebarTitle}>
-              <span>Messages</span>
-              <button style={S.newChatBtn} onClick={openNewChat} title="New conversation" disabled={adminView}>
+              <span>{chatMode === 'customer' ? 'Customers' : 'Messages'}</span>
+              <button style={S.newChatBtn} onClick={openNewChat} title="New conversation" disabled={adminView || chatMode === 'customer'}>
                 <svg viewBox="0 0 24 24" width={16} height={16} fill="#fff">
                   <path d="M19 3H5c-1.1 0-2 .9-2 2v14l4-4h12c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 10H8v-2h4V7h2v4h4v2h-4v4h-2v-4z"/>
                 </svg>
               </button>
             </div>
-            {/* Admin toggle */}
-            {isAdmin && (
+            {/* Admin toggle — only in team chat mode */}
+            {isAdmin && chatMode === 'team' && (
               <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', borderRadius: 10, padding: 3, marginBottom: 10 }}>
                 {[['My Chats', false], ['All Chats', true]].map(([label, val]) => (
                   <button key={label} onClick={() => { setAdminView(val); setActiveConvId(null); setMessages([]) }} style={{
@@ -864,11 +948,42 @@ export default function Communications() {
             )}
             <div style={S.searchBar}>
               <svg viewBox="0 0 24 24" width={16} height={16} fill="#94a3b8"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5a6.5 6.5 0 10-13 0 6.5 6.5 0 006.5 6.5c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-              <input style={S.searchInput} placeholder="Search conversations…" value={search} onChange={e => setSearch(e.target.value)} />
+              {chatMode === 'customer'
+                ? <input style={S.searchInput} placeholder="Search customers…" value={custSearch} onChange={e => setCustSearch(e.target.value)} />
+                : <input style={S.searchInput} placeholder="Search conversations…" value={search} onChange={e => setSearch(e.target.value)} />
+              }
             </div>
           </div>
 
           <div style={S.convList}>
+            {/* Customer Inbox list */}
+            {chatMode === 'customer' && (
+              <>
+                {custLoading && <div style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Loading customers…</div>}
+                {!custLoading && filteredCustList.length === 0 && (
+                  <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+                    {custSearch ? 'No customers found' : 'No customers assigned'}
+                  </div>
+                )}
+                {filteredCustList.map(cust => (
+                  <div key={cust._id} style={{ ...S.convItem(selCust?._id === cust._id), flexDirection: 'column', alignItems: 'flex-start' }} onClick={() => setSelCust(cust)}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: colorForName(cust.name || cust.businessName || ''), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, color: '#fff', flexShrink: 0 }}>
+                        {initials(cust.name || cust.businessName || '?')}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={S.convName(selCust?._id === cust._id)}>{cust.name || cust.businessName || '—'}</div>
+                        <div style={S.convPreview}>{cust.email || cust.phone || ''}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* Team Chat list */}
+            {chatMode === 'team' && (
+              <>
             {allConvsLoading && (
               <div style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Loading all chats…</div>
             )}
@@ -927,12 +1042,84 @@ export default function Communications() {
                 </div>
               )
             })}
+              </>
+            )}
           </div>
         </div>
 
         {/* ── RIGHT PANEL ───────────────────────────────────────────── */}
         <div style={S.panel}>
-          {!activeConvId ? (
+
+          {/* Customer Inbox Panel */}
+          {chatMode === 'customer' && (
+            !selCust ? (
+              <div style={S.emptyState}>
+                <svg viewBox="0 0 24 24" width={48} height={48} fill="#cbd5e1"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                <div style={{ fontSize: 15, fontWeight: 600, color: '#94a3b8' }}>Select a customer</div>
+                <div style={{ fontSize: 13, color: '#cbd5e1' }}>to view their messages</div>
+              </div>
+            ) : (
+              <>
+                {/* Header */}
+                <div style={S.panelHeader}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: colorForName(selCust.name || selCust.businessName || ''), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                    {initials(selCust.name || selCust.businessName || '?')}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: '#1e293b' }}>{selCust.name || selCust.businessName}</div>
+                    <div style={{ fontSize: 12, color: '#94a3b8' }}>{selCust.email || selCust.phone || 'Customer'}</div>
+                  </div>
+                </div>
+
+                {/* Messages */}
+                <div style={{ ...S.messagesArea }}>
+                  {custMsgLoading && <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: 20 }}>Loading messages…</div>}
+                  {!custMsgLoading && custMsgs.length === 0 && (
+                    <div style={{ ...S.emptyState, flex: 1 }}>
+                      <div style={{ fontSize: 14, color: '#94a3b8' }}>No messages yet from this customer.</div>
+                    </div>
+                  )}
+                  {custMsgs.map((msg, i) => {
+                    const isCustomer = msg.sender === 'customer'
+                    return (
+                      <div key={msg._id || i}>
+                        <div style={S.bubble(!isCustomer)}>
+                          {!isCustomer ? null : <div style={{ width: 28 }} />}
+                          <div style={S.bubbleText(!isCustomer)}>{msg.text}</div>
+                        </div>
+                        <div style={S.bubbleMeta(!isCustomer)}>
+                          <span style={{ fontSize: 10, color: '#94a3b8' }}>
+                            {isCustomer ? (selCust.name || 'Customer') : (msg.teamUser?.name || 'Support')} · {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  <div ref={custBottomRef} />
+                </div>
+
+                {/* Input */}
+                <div style={S.inputBar}>
+                  <textarea
+                    style={S.textarea}
+                    rows={1}
+                    placeholder={`Reply to ${selCust.name || selCust.businessName}…`}
+                    value={custText}
+                    onChange={e => setCustText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCustMessage() } }}
+                  />
+                  <button style={S.sendBtn(!!custText.trim())} onClick={sendCustMessage} disabled={!custText.trim() || custSending}>
+                    <svg viewBox="0 0 24 24" width={18} height={18} fill={custText.trim() ? '#fff' : '#94a3b8'}>
+                      <path d="M2 21l21-9L2 3v7l15 2-15 2z"/>
+                    </svg>
+                  </button>
+                </div>
+              </>
+            )
+          )}
+
+          {/* Team Chat Panel */}
+          {chatMode === 'team' && (!activeConvId ? (
             <div style={S.emptyState}>
               <svg viewBox="0 0 24 24" width={56} height={56} fill="#cbd5e1"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
               <div style={{ fontSize: 16, fontWeight: 600, color: '#94a3b8' }}>Select a conversation</div>
@@ -1070,7 +1257,8 @@ export default function Communications() {
                 </button>
               </div>}
             </>
-          )}
+          ))}
+
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import {
   getAllInvoicesApi, createInvoiceApi, updateInvoiceApi, markInvoicePaidApi,
@@ -6,8 +7,7 @@ import {
 import { downloadInvoicePdf } from '../../utils/invoicePdf'
 import { getInvoiceSettingsApi } from '../../api/settingsApi'
 import { getAllCustomersApi } from '../../api/customerApi'
-import { getAllSoftwaresApi } from '../../api/softwareApi'
-import { getAllSubscriptionsApi } from '../../api/subscriptionApi'
+import { getCustomerSubscriptionsApi } from '../../api/customerApi'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtINR  = n => n != null ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n) : '—'
@@ -214,7 +214,7 @@ const BLANK_FORM = {
   paymentStatus: 'Pending', paymentMethod: '', transactionId: '', notes: '',
 }
 
-function InvoiceDrawer({ mode, initial, onClose, onSaved, customers, allSubscriptions, softwares }) {
+function InvoiceDrawer({ mode, initial, onClose, onSaved, customers }) {
   const [form, setForm] = useState(() => {
     if (!initial) return BLANK_FORM
     return {
@@ -226,24 +226,40 @@ function InvoiceDrawer({ mode, initial, onClose, onSaved, customers, allSubscrip
       periodTo:     toInput(initial.periodTo),
     }
   })
-  const [err,  setErr]  = useState('')
-  const [busy, setBusy] = useState(false)
+  const [err,        setErr]        = useState('')
+  const [busy,       setBusy]       = useState(false)
+  const [customerSubs, setCustomerSubs] = useState([])
+  const [subLoading,   setSubLoading]   = useState(false)
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  // Filter subscriptions by chosen customer
-  const customerSubs = allSubscriptions.filter(s =>
-    (s.customer?._id || s.customer) === form.customer
-  )
+  // Fetch active subscriptions whenever the selected customer changes
+  useEffect(() => {
+    if (!form.customer) { setCustomerSubs([]); return }
+    setSubLoading(true)
+    getCustomerSubscriptionsApi(form.customer)
+      .then(r => {
+        const all = r.data?.data || []
+        setCustomerSubs(all.filter(s => s.status === 'Active'))
+      })
+      .catch(() => setCustomerSubs([]))
+      .finally(() => setSubLoading(false))
+  }, [form.customer])
 
-  // Auto-fill software when subscription changes
+  // Auto-fill software, amount, and period when subscription changes
   const handleSubChange = id => {
     set('subscription', id)
-    const sub = allSubscriptions.find(s => s._id === id)
+    const sub = customerSubs.find(s => s._id === id)
     if (sub) {
-      const swId = sub.softwares?._id || sub.softwares || ''
-      set('software', swId)
-      if (!form.amount) set('amount', sub.amountCharged || '')
+      set('software',   sub.softwares?._id || sub.softwares || '')
+      set('amount',     sub.amountCharged  || '')
+      set('periodFrom', toInput(new Date()))
+      set('periodTo',   toInput(sub.renewalDate))
+      // Recalculate total with the new amount
+      const a = parseFloat(sub.amountCharged) || 0
+      const t = parseFloat(form.tax)          || 0
+      const d = parseFloat(form.discount)     || 0
+      set('totalAmount', Math.max(0, a + (a * t / 100) - d))
     }
   }
 
@@ -306,15 +322,31 @@ function InvoiceDrawer({ mode, initial, onClose, onSaved, customers, allSubscrip
           <SL label="Customer & Subscription" />
           <div style={{ display: 'grid', gap: '12px', marginBottom: '4px' }}>
             <Field label="Customer" required>
-              <select value={form.customer} onChange={e => { set('customer', e.target.value); set('subscription', ''); set('software', '') }} onFocus={fb} onBlur={bb} style={inp({ background: 'white' })} disabled={mode === 'edit'}>
+              <select value={form.customer}
+                onChange={e => { set('customer', e.target.value); set('subscription', ''); set('software', ''); set('amount', ''); set('periodTo', '') }}
+                onFocus={fb} onBlur={bb} style={inp({ background: 'white' })} disabled={mode === 'edit'}>
                 <option value="">Select customer</option>
                 {customers.map(c => <option key={c._id} value={c._id}>{c.name} — {c.phone}</option>)}
               </select>
             </Field>
             <Field label="Subscription" required>
-              <select value={form.subscription} onChange={e => handleSubChange(e.target.value)} onFocus={fb} onBlur={bb} style={inp({ background: 'white' })} disabled={!form.customer || mode === 'edit'}>
-                <option value="">Select subscription</option>
-                {customerSubs.map(s => <option key={s._id} value={s._id}>{s.softwares?.name || 'Unknown'} — renews {fmtDate(s.renewalDate)}</option>)}
+              <select value={form.subscription} onChange={e => handleSubChange(e.target.value)} onFocus={fb} onBlur={bb}
+                style={inp({ background: subLoading ? '#f9fafb' : 'white', color: subLoading ? '#9ca3af' : undefined })}
+                disabled={!form.customer || subLoading || mode === 'edit'}>
+                <option value="">
+                  {!form.customer
+                    ? 'Select a customer first'
+                    : subLoading
+                    ? 'Loading subscriptions…'
+                    : customerSubs.length === 0
+                    ? 'No active subscriptions found'
+                    : 'Select subscription'}
+                </option>
+                {customerSubs.map(s => (
+                  <option key={s._id} value={s._id}>
+                    {s.softwares?.name || 'Unknown'} — {s.billingCycle} — ₹{s.amountCharged} — renews {fmtDate(s.renewalDate)}
+                  </option>
+                ))}
               </select>
             </Field>
           </div>
@@ -394,7 +426,7 @@ function InvoiceDrawer({ mode, initial, onClose, onSaved, customers, allSubscrip
 // ─────────────────────────────────────────────────────────────────────────────
 //  GRID CARD
 // =============================================================================
-function InvoiceCard({ inv, isAdmin, onMarkPaid, onEdit }) {
+function InvoiceCard({ inv, isAdmin, onView, onMarkPaid, onEdit }) {
   const [hov, setHov] = useState(false)
   const pc = PAYMENT_CFG[inv.paymentStatus] || { color: '#6b7280', bg: '#f3f4f6', border: 'gainsboro' }
   const isPaid    = inv.paymentStatus === 'Paid'
@@ -487,6 +519,7 @@ function InvoiceCard({ inv, isAdmin, onMarkPaid, onEdit }) {
 
       {/* Actions */}
       <div style={{ padding: '10px 16px', display: 'flex', gap: '6px', justifyContent: 'flex-end', marginTop: 'auto' }}>
+        <ActionBtn icon={IC.invoice} title="View Detail" onClick={() => onView(inv)} color="#6b7280" bg="#f9fafb" />
         {isAdmin && isPending && (
           <ActionBtn icon={IC.paid} title="Mark as Paid" label="Mark Paid" onClick={() => onMarkPaid(inv)} color="#16a34a" bg="#f0fdf4" />
         )}
@@ -503,6 +536,7 @@ function InvoiceCard({ inv, isAdmin, onMarkPaid, onEdit }) {
 //  MAIN PAGE
 // =============================================================================
 export default function Invoices() {
+  const navigate  = useNavigate()
   const { user }  = useSelector(s => s.auth)
   const isAdmin   = ['Admin', 'SuperAdmin'].includes(user?.role)
 
@@ -522,10 +556,8 @@ export default function Invoices() {
   // Org settings for PDF generation
   const [orgSettings, setOrgSettings] = useState({})
 
-  // Dropdown data (loaded lazily)
-  const [customers,   setCustomers]   = useState([])
-  const [allSubs,     setAllSubs]     = useState([])
-  const [swList,      setSwList]      = useState([])
+  // Dropdown data (loaded lazily when drawer opens)
+  const [customers, setCustomers] = useState([])
 
   const fetchInvoices = useCallback(async (pg = 1) => {
     setLoading(true)
@@ -548,14 +580,8 @@ export default function Invoices() {
   const loadDropdowns = useCallback(async () => {
     if (customers.length) return
     try {
-      const [cR, sR, swR] = await Promise.all([
-        getAllCustomersApi({ limit: 200 }),
-        getAllSubscriptionsApi({ limit: 200 }),
-        getAllSoftwaresApi({ limit: 200 }),
-      ])
-      setCustomers(cR.data.data || [])
-      setAllSubs(sR.data.data   || [])
-      setSwList(swR.data.data   || [])
+      const r = await getAllCustomersApi({ limit: 200 })
+      setCustomers(r.data.data || [])
     } catch (_) { }
   }, [customers.length])
 
@@ -698,6 +724,7 @@ export default function Invoices() {
                       </td>
                       <td style={{ padding: '11px 16px' }}>
                         <div style={{ display: 'flex', gap: '4px' }}>
+                          <ActionBtn icon={IC.invoice} title="View Detail" onClick={() => navigate(`/invoices/${inv._id}`)} color="#6b7280" bg="#f9fafb" />
                           {isAdmin && inv.paymentStatus === 'Pending' && (
                             <ActionBtn icon={IC.paid} title="Mark as Paid" onClick={() => setMarkPaid(inv)} color="#16a34a" bg="#f0fdf4" />
                           )}
@@ -766,7 +793,7 @@ export default function Invoices() {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px' }}>
                 {invoices.map(inv => (
-                  <InvoiceCard key={inv._id} inv={inv} isAdmin={isAdmin} onMarkPaid={setMarkPaid} onEdit={i => openDrawer('edit', i)} />
+                  <InvoiceCard key={inv._id} inv={inv} isAdmin={isAdmin} onView={i => navigate(`/invoices/${i._id}`)} onMarkPaid={setMarkPaid} onEdit={i => openDrawer('edit', i)} />
                 ))}
               </div>
 
@@ -802,7 +829,7 @@ export default function Invoices() {
         <InvoiceDrawer
           mode={drawer.mode} initial={drawer.initial}
           onClose={() => setDrawer(null)} onSaved={handleSaved}
-          customers={customers} allSubscriptions={allSubs} softwares={swList}
+          customers={customers}
         />
       )}
       {markPaid && <MarkPaidModal invoice={markPaid} onClose={() => setMarkPaid(null)} onSaved={handleSaved} />}

@@ -29,7 +29,7 @@ export default function PortalTickets() {
   const [subs, setSubs]         = useState([])
   const [loading, setLoading]   = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm]         = useState({ subject: '', description: '', priority: 'Medium', software: '' })
+  const [form, setForm]         = useState({ title: '', type: '', description: '', priority: 'Medium', software: '' })
   const [saving, setSaving]     = useState(false)
   const [err, setErr]           = useState('')
 
@@ -51,12 +51,15 @@ export default function PortalTickets() {
   const handleCreate = async (e) => {
     e.preventDefault()
     setErr('')
-    if (!form.subject || !form.description) { setErr('Subject and description are required.'); return }
+    if (!form.title.trim())       { setErr('Subject is required.'); return }
+    if (!form.type)               { setErr('Please select a ticket type.'); return }
+    if (!form.software)           { setErr('Please select the related software.'); return }
+    if (!form.description.trim()) { setErr('Description is required.'); return }
     setSaving(true)
     try {
       await portalCreateTicketApi(form)
       setShowForm(false)
-      setForm({ subject: '', description: '', priority: 'Medium', software: '' })
+      setForm({ title: '', type: '', description: '', priority: 'Medium', software: '' })
       load()
     } catch (e) {
       setErr(e.response?.data?.message || 'Failed to create ticket.')
@@ -103,7 +106,28 @@ export default function PortalTickets() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>Subject *</label>
-                <input value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder="Brief summary of the issue" style={{ ...inp(), height: '40px' }} />
+                <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Brief summary of the issue" style={{ ...inp(), height: '40px' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>Type *</label>
+                <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} style={{ ...inp(), height: '40px' }}>
+                  <option value="">— Select type —</option>
+                  <option value="Bug">Bug</option>
+                  <option value="FeatureRequest">Feature Request</option>
+                  <option value="HowTo">How To</option>
+                  <option value="Performance">Performance</option>
+                  <option value="Billing">Billing</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>Related Software *</label>
+                <select value={form.software} onChange={e => setForm(f => ({ ...f, software: e.target.value }))} style={{ ...inp(), height: '40px' }}>
+                  <option value="">— Select software —</option>
+                  {subs.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                </select>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>Priority</label>
@@ -111,13 +135,6 @@ export default function PortalTickets() {
                   <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
                 </select>
               </div>
-            </div>
-            <div style={{ marginBottom: '14px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>Related Software</label>
-              <select value={form.software} onChange={e => setForm(f => ({ ...f, software: e.target.value }))} style={{ ...inp(), height: '40px' }}>
-                <option value="">— Select (optional) —</option>
-                {subs.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
-              </select>
             </div>
             <div style={{ marginBottom: '18px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>Description *</label>
@@ -162,7 +179,7 @@ export default function PortalTickets() {
                   >
                     <td style={{ ...TD, fontWeight: 600, color: '#0f172a' }}>#{t.ticketNumber}</td>
                     <td style={{ ...TD, maxWidth: '300px' }}>
-                      <div style={{ fontWeight: 500, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.subject}</div>
+                      <div style={{ fontWeight: 500, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.title}</div>
                     </td>
                     <td style={{ ...TD, color: '#64748b' }}>{t.priority || '—'}</td>
                     <td style={TD}>

@@ -13,7 +13,10 @@ import PortalAlerts from '../pages/portal/PortalAlerts'
 import PortalTickets from '../pages/portal/PortalTickets'
 import PortalTicketDetail from '../pages/portal/PortalTicketDetail'
 import PortalMessages from '../pages/portal/PortalMessages'
-import PortalTeam from '../pages/portal/PortalTeam'
+import PortalNotifications from '../pages/portal/PortalNotifications'
+import PortalSettings from '../pages/portal/PortalSettings'
+import PortalForgotPassword from '../pages/portal/PortalForgotPassword'
+import PortalResetPassword from '../pages/portal/PortalResetPassword'
 
 // Auth pages (public)
 import Login from '../pages/auth/Login'
@@ -26,24 +29,34 @@ import Tickets from '../pages/tickets/Tickets'
 import Dashboard from '../pages/dashboard/Dashboard'
 import CreateUser from '../pages/users/CreateUser'
 import Customers from '../pages/customers/Customers'
+import CustomerDetail from '../pages/customers/CustomerDetail'
 import Softwares from '../pages/softwares/Softwares'
 import SoftwareDetail from '../pages/softwares/SoftwareDetail'
 import Subscriptions from '../pages/subscriptions/Subscriptions'
+import SubscriptionDetail from '../pages/subscriptions/SubscriptionDetail'
 import Invoices from '../pages/invoices/Invoices'
+import InvoiceDetail from '../pages/invoices/InvoiceDetail'
 import Alerts from '../pages/alerts/Alerts'
 import Settings from '../pages/settings/Settings'
 import Users from '../pages/users/Users'
 import Reports from '../pages/reports/Reports'
 import AuditLogs from '../pages/audit/AuditLogs'
 import Communications from '../pages/communications/Communications'
+import Notifications from '../pages/notifications/Notifications'
+import Teams from '../pages/teams/Teams'
 
 // ── Auth guard ───────────────────────────────────────────────────────────────
-// Shows nothing while the cookie session check is in flight (initializing).
-// Redirects to /login if no active session.
 function ProtectedRoute() {
   const { isAuthenticated, initializing } = useSelector((state) => state.auth)
   if (initializing) return null
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />
+}
+
+// ── Admin-only guard — redirects Standard users to /dashboard ─────────────────
+function AdminRoute() {
+  const { user } = useSelector((state) => state.auth)
+  const isAdmin = ['Admin', 'SuperAdmin'].includes(user?.role)
+  return isAdmin ? <Outlet /> : <Navigate to="/dashboard" replace />
 }
 
 // ── Placeholder while a page hasn't been built yet ──────────────────────────
@@ -102,16 +115,17 @@ export default function AppRoutes() {
           <Route path="/dashboard"            element={<Dashboard />} />
 
           <Route path="/customers"            element={<Customers />} />
-          <Route path="/customers/:id"        element={<ComingSoon title="Customer Detail" />} />
+          <Route path="/customers/:id"        element={<CustomerDetail />} />
 
           <Route path="/softwares"            element={<Softwares />} />
           <Route path="/softwares/:id"        element={<SoftwareDetail />} />
 
-          <Route path="/subscriptions"        element={<Subscriptions />} />
-          <Route path="/subscriptions/:id"    element={<ComingSoon title="Subscription Detail" />} />
-
-          <Route path="/invoices"             element={<Invoices />} />
-          <Route path="/invoices/:id"         element={<ComingSoon title="Invoice Detail" />} />
+          <Route element={<AdminRoute />}>
+            <Route path="/subscriptions"      element={<Subscriptions />} />
+            <Route path="/subscriptions/:id"  element={<SubscriptionDetail />} />
+            <Route path="/invoices"           element={<Invoices />} />
+            <Route path="/invoices/:id"       element={<InvoiceDetail />} />
+          </Route>
 
           <Route path="/tickets"              element={<Tickets />} />
           <Route path="/tickets/:id"          element={<Tickets />} />
@@ -124,16 +138,19 @@ export default function AppRoutes() {
 
           <Route path="/users"                element={<Users />} />
           <Route path="/users/new"            element={<CreateUser />} />
+          <Route path="/teams"                element={<Teams />} />
 
           <Route path="/audit"                element={<AuditLogs />} />
 
-          <Route path="/notifications"        element={<ComingSoon title="Notifications" />} />
+          <Route path="/notifications"        element={<Notifications />} />
           <Route path="/settings"             element={<Settings />} />
         </Route>
       </Route>
 
-      {/* ── Customer Portal ── */}
-      <Route path="/portal/login" element={<Navigate to="/login" replace />} />
+      {/* ── Customer Portal public ── */}
+      <Route path="/portal/login"                    element={<Navigate to="/login" replace />} />
+      <Route path="/portal/forgot-password"          element={<PortalForgotPassword />} />
+      <Route path="/portal/reset-password/:token"    element={<PortalResetPassword />} />
       <Route path="/portal" element={<PortalLayout />}>
         <Route index element={<Navigate to="/portal/dashboard" replace />} />
         <Route path="dashboard"     element={<PortalDashboard />} />
@@ -142,8 +159,10 @@ export default function AppRoutes() {
         <Route path="alerts"        element={<PortalAlerts />} />
         <Route path="tickets"       element={<PortalTickets />} />
         <Route path="tickets/:id"   element={<PortalTicketDetail />} />
-        <Route path="messages"      element={<PortalMessages />} />
-        <Route path="team"          element={<PortalTeam />} />
+        <Route path="messages"       element={<PortalMessages />} />
+        <Route path="notifications" element={<PortalNotifications />} />
+        <Route path="settings"      element={<PortalSettings />} />
+        <Route path="team"          element={<Navigate to="/portal/messages" replace />} />
       </Route>
 
       {/* ── Fallback ── */}

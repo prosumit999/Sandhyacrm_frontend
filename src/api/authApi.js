@@ -27,3 +27,11 @@ export const registerApi = (data) =>
 // GET /api/v1/auth/me  (requires Authorization header)
 export const getMeApi = () =>
   axiosInstance.get('/auth/me')
+
+// PUT /api/v1/auth/me  — update own name & phone
+export const updateMeApi = (data) =>
+  axiosInstance.put('/auth/me', data)
+
+// PUT /api/v1/auth/change-password  — change own password
+export const changePasswordApi = (data) =>
+  axiosInstance.put('/auth/change-password', data)

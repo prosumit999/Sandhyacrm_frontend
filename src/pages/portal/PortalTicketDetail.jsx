@@ -46,7 +46,7 @@ export default function PortalTicketDetail() {
     setErr('')
     setSending(true)
     try {
-      await portalReplyTicketApi(id, { text: reply })
+      await portalReplyTicketApi(id, { message: reply })
       setReply('')
       load()
     } catch (e) {
@@ -85,7 +85,7 @@ export default function PortalTicketDetail() {
             <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#b0bec5', textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '8px' }}>
               Ticket #{ticket.ticketNumber}
             </div>
-            <h2 style={{ fontSize: '17px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px' }}>{ticket.subject}</h2>
+            <h2 style={{ fontSize: '17px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px' }}>{ticket.title}</h2>
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '13px', color: '#64748b' }}>Priority: <strong style={{ color: '#334155' }}>{ticket.priority}</strong></span>
               {ticket.software?.name && <span style={{ fontSize: '13px', color: '#64748b' }}>Software: <strong style={{ color: '#334155' }}>{ticket.software.name}</strong></span>}
@@ -121,7 +121,10 @@ export default function PortalTicketDetail() {
 
           {/* Replies */}
           {publicReplies.map((r, i) => {
-            const isCustomer = r.senderType === 'customer'
+            const isCustomer = !!r.isCustomerReply
+            const senderLabel = isCustomer
+              ? (customer?.name || 'You')
+              : (r.sentBy?.name || 'Support Team')
             return (
               <div key={i} style={{ display: 'flex', justifyContent: isCustomer ? 'flex-end' : 'flex-start' }}>
                 <div style={{ maxWidth: '80%' }}>
@@ -131,10 +134,10 @@ export default function PortalTicketDetail() {
                     borderRadius: isCustomer ? '12px 12px 4px 12px' : '4px 12px 12px 12px',
                     padding: '12px 16px',
                   }}>
-                    <p style={{ margin: 0, fontSize: '14px', color: isCustomer ? 'white' : '#334155', lineHeight: 1.6 }}>{r.text}</p>
+                    <p style={{ margin: 0, fontSize: '14px', color: isCustomer ? 'white' : '#334155', lineHeight: 1.6 }}>{r.message}</p>
                   </div>
                   <div style={{ textAlign: isCustomer ? 'right' : 'left', marginTop: '5px', fontSize: '11.5px', color: '#94a3b8' }}>
-                    {r.senderName || (isCustomer ? customer?.name : 'Support Team')} · {fmtDate(r.createdAt)}
+                    {senderLabel} · {fmtDate(r.createdAt)}
                   </div>
                 </div>
               </div>

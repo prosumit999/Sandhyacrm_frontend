@@ -574,7 +574,7 @@ export default function Customers() {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
-          <PlusCard label="Add Customer" onClick={() => setModal({ mode: 'create', initial: { ...BLANK, serviceUser: isAdmin ? '' : user?._id } })} />
+          {isAdmin && <PlusCard label="Add Customer" onClick={() => setModal({ mode: 'create', initial: { ...BLANK } })} />}
           {customers.length === 0 ? (
             <div style={{ gridColumn: '1/-1', padding: '52px 0', textAlign: 'center', color: '#9ca3af', fontSize: '13.5px' }}>
               {search || status ? 'No customers match the filters.' : 'No customers found.'}
@@ -700,7 +700,7 @@ function CustomerCard({ c, isAdmin, isSuperAdmin, onView, onEdit, onPortal, onDe
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <ActionBtn icon={IC.eye}  title="View Detail"   onClick={onView} />
-          <ActionBtn icon={IC.edit} title="Edit Customer" onClick={onEdit} />
+          {isAdmin && <ActionBtn icon={IC.edit} title="Edit Customer" onClick={onEdit} />}
           {isAdmin && <ActionBtn icon={IC.key} title={c.portalAccess ? 'Manage Portal Access (Enabled)' : 'Enable Portal Access'} onClick={onPortal} active={c.portalAccess} />}
           {isSuperAdmin && <ActionBtn icon={IC.trash} title="Delete" onClick={onDelete} danger />}
         </div>

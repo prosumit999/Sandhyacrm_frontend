@@ -95,7 +95,7 @@ function TicketCard({ t, onClick }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: '11.5px', color: '#9ca3af', marginBottom: '4px', fontWeight: 600 }}>#{t.ticketNumber}</div>
-          <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#111827', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.subject}</div>
+          <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#111827', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.title}</div>
         </div>
         <StatusBadge status={t.status} />
       </div>
@@ -129,14 +129,33 @@ function TicketDrawer({ ticket, isAdmin, isSuperAdmin, userId, onClose, onUpdate
   const [actionBusy,   setActionBusy]   = useState('')
   const [delConfirm,   setDelConfirm]   = useState(false)
   const [current,      setCurrent]      = useState(ticket)
+  const [online,       setOnline]       = useState(navigator.onLine)
 
-  const refresh = async () => {
+  useEffect(() => {
+    const on  = () => setOnline(true)
+    const off = () => setOnline(false)
+    window.addEventListener('online',  on)
+    window.addEventListener('offline', off)
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
+  }, [])
+
+  const refresh = useCallback(async () => {
     try {
       const res = await axiosInstance.get(`/tickets/${ticket._id}`)
       const updated = res.data?.data || res.data
-      setCurrent(updated); onUpdated(updated)
+      setCurrent(updated)
+      setAssignTo(updated.assignedTo?._id || '')
+      onUpdated(updated)
     } catch {}
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticket._id])
+
+  // 3s when online, 15s when offline
+  useEffect(() => {
+    refresh()
+    const id = setInterval(refresh, online ? 3000 : 15000)
+    return () => clearInterval(id)
+  }, [refresh, online])
 
   const handleReply = async () => {
     if (!replyText.trim()) return
@@ -184,13 +203,21 @@ function TicketDrawer({ ticket, isAdmin, isSuperAdmin, userId, onClose, onUpdate
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 600, marginBottom: '4px' }}>#{current.ticketNumber}</div>
-              <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827', lineHeight: 1.3 }}>{current.subject}</div>
+              <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827', lineHeight: 1.3 }}>{current.title}</div>
               <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
                 <StatusBadge status={current.status} />
                 <PriorityBadge priority={current.priority || 'Medium'} />
               </div>
             </div>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9ca3af', lineHeight: 1, flexShrink: 0, padding: '4px' }}>×</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <span title={online ? 'Live — refreshing every 3s' : 'Offline — refreshing every 15s'}
+                style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10.5px', color: online ? '#16a34a' : '#d97706', fontWeight: 600, cursor: 'default' }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: online ? '#16a34a' : '#d97706', display: 'inline-block',
+                  boxShadow: online ? '0 0 0 2px #bbf7d0' : '0 0 0 2px #fde68a' }} />
+                {online ? 'Live' : 'Offline'}
+              </span>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9ca3af', lineHeight: 1, padding: '4px' }}>×</button>
+            </div>
           </div>
 
           {/* meta */}
@@ -251,13 +278,17 @@ function TicketDrawer({ ticket, isAdmin, isSuperAdmin, userId, onClose, onUpdate
 
           {/* replies */}
           {replies.map((r, i) => {
-            const isMe = r.author?._id === userId || r.author === userId
+            const isCustomerReply = !!r.isCustomerReply
+            const isMe = !isCustomerReply && (r.sentBy?._id?.toString() === userId?.toString() || r.sentBy === userId)
+            const senderLabel = isCustomerReply
+              ? (r.customerRef?.name || 'Customer')
+              : (r.sentBy?.name || 'Team')
             return (
               <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                 <div style={{ fontSize: '11px', color: '#9ca3af', paddingLeft: isMe ? 0 : '4px', paddingRight: isMe ? '4px' : 0 }}>
-                  {r.author?.name || 'Unknown'} · {fmtTime(r.createdAt)}
+                  {senderLabel} · {fmtTime(r.createdAt)}
                 </div>
-                <div style={{ maxWidth: '85%', padding: '10px 14px', borderRadius: isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px', background: isMe ? '#1a73e8' : '#f3f4f6', color: isMe ? 'white' : '#111827', fontSize: '13.5px', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+                <div style={{ maxWidth: '85%', padding: '10px 14px', borderRadius: isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px', background: isMe ? '#1a73e8' : isCustomerReply ? '#e0f2fe' : '#f3f4f6', color: isMe ? 'white' : '#111827', fontSize: '13.5px', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
                   {r.message}
                 </div>
               </div>

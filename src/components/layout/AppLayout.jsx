@@ -1,9 +1,15 @@
 ﻿import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { logoutUser } from '../../store/slices/authSlice'
 import { useChatContext } from '../../context/ChatContext'
 import logoSvg from '../../assets/logosvg.svg'
+import {
+  getMyNotificationsApi,
+  markNotificationReadApi,
+  markAllNotificationsReadApi,
+  dismissNotificationApi,
+} from '../../api/notificationApi'
 
 const Icon = ({ d, size = 20 }) => (
   <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7} style={{ flexShrink: 0 }}>
@@ -23,6 +29,7 @@ const IC = {
   reports:        'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
   users:          'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
   audit:          'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
+  teams:          'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
   settings:       'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
   logout:         'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1',
   bell:           'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
@@ -48,18 +55,17 @@ const ADMIN_OVERVIEW_NAV = [
 const ADMIN_NAV = [
   { to: '/reports', label: 'Reports',         icon: 'reports' },
   { to: '/users',   label: 'User Management', icon: 'users' },
+  { to: '/teams',   label: 'Teams',           icon: 'teams' },
   { to: '/audit',   label: 'Audit Logs',      icon: 'audit' },
 ]
 
 // ── Standard user nav ─────────────────────────────────────────────────────────
 const STD_OVERVIEW_NAV = [
-  { to: '/dashboard',     label: 'Dashboard',    icon: 'dashboard' },
-  { to: '/customers',     label: 'My Customers', icon: 'customers' },
+  { to: '/dashboard',  label: 'Dashboard',    icon: 'dashboard' },
+  { to: '/customers',  label: 'My Customers', icon: 'customers' },
 ]
 const STD_WORK_NAV = [
-  { to: '/subscriptions', label: 'Subscriptions',  icon: 'subscriptions' },
-  { to: '/invoices',      label: 'Invoices',        icon: 'invoices' },
-  { to: '/tickets',       label: 'Support Tickets', icon: 'tickets' },
+  { to: '/tickets', label: 'Support Tickets', icon: 'tickets' },
 ]
 const STD_COMMS_NAV = [
   { to: '/alerts',         label: 'Alerts',         icon: 'alerts' },
@@ -74,7 +80,7 @@ const PAGE_TITLES = {
   '/dashboard': 'Dashboard', '/customers': 'Customers', '/softwares': 'Softwares',
   '/subscriptions': 'Subscriptions', '/invoices': 'Invoices', '/tickets': 'Support Tickets',
   '/alerts': 'Alerts', '/communications': 'Communications', '/reports': 'Reports',
-  '/users': 'User Management', '/users/new': 'Create User', '/audit': 'Audit Logs',
+  '/users': 'User Management', '/users/new': 'Create User', '/teams': 'Teams', '/audit': 'Audit Logs',
   '/notifications': 'Notifications', '/settings': 'Settings',
 }
 
@@ -218,18 +224,228 @@ function SettingsDropdown({ user, onLogout, onClose }) {
   )
 }
 
+// ── Notification type config ──────────────────────────────────────────────────
+const NOTIF_CFG = {
+  SubscriptionRenewal: { color: '#16a34a', bg: '#f0fdf4', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
+  PaymentOverdue:      { color: '#dc2626', bg: '#fef2f2', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+  DomainExpiry:        { color: '#d97706', bg: '#fffbeb', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+  HostingExpiry:       { color: '#d97706', bg: '#fffbeb', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+  SSLExpiry:           { color: '#d97706', bg: '#fffbeb', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+  TicketAssigned:      { color: '#1a73e8', bg: '#eff6ff', icon: 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z' },
+  TicketReplied:       { color: '#1a73e8', bg: '#eff6ff', icon: 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z' },
+  TicketResolved:      { color: '#16a34a', bg: '#f0fdf4', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+  InvoiceCreated:      { color: '#7c3aed', bg: '#f5f3ff', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+  AlertTriggered:      { color: '#ea580c', bg: '#fff7ed', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+  Custom:              { color: '#6b7280', bg: '#f9fafb', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
+}
+
+function timeAgo(d) {
+  if (!d) return ''
+  const diff = Math.floor((Date.now() - new Date(d)) / 1000)
+  if (diff < 60)    return `${diff}s ago`
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+  return `${Math.floor(diff / 86400)}d ago`
+}
+
+// Map a stored notification link to a valid app route.
+// Stale DB records may contain paths like /alerts/:id which have no route.
+const VALID_PREFIXES = ['/tickets/', '/customers/', '/subscriptions/', '/invoices/']
+const SECTION_ROOTS  = { alerts: '/alerts', invoices: '/invoices', subscriptions: '/subscriptions', customers: '/customers', tickets: '/tickets', notifications: '/notifications' }
+function safeLink(link) {
+  if (!link) return null
+  const path = link.split('?')[0]
+  if (VALID_PREFIXES.some(p => path.startsWith(p))) return link
+  const section = path.replace(/^\//, '').split('/')[0]
+  return SECTION_ROOTS[section] ?? link
+}
+
+// ── Notification Dropdown ─────────────────────────────────────────────────────
+function NotificationDropdown({ notifs, unreadCount, onClose, onMarkRead, onMarkAllRead, onDismiss, navigate }) {
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const fn = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', fn)
+    return () => document.removeEventListener('mousedown', fn)
+  }, [onClose])
+
+  const handleClick = async (n) => {
+    if (!n.isRead) await onMarkRead(n._id)
+    if (n.link) { onClose(); navigate(safeLink(n.link)) }
+  }
+
+  return (
+    <div ref={ref} style={{
+      position: 'fixed', top: HEADER_H + 8, right: 16,
+      width: 380, maxHeight: 520,
+      background: 'rgba(255,255,255,0.98)',
+      backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+      borderRadius: 14,
+      boxShadow: '0 12px 40px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.06)',
+      zIndex: 999, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+      fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 12px', borderBottom: '1px solid #f3f4f6', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Notifications</span>
+          {unreadCount > 0 && (
+            <span style={{ background: '#1a73e8', color: 'white', fontSize: 10, fontWeight: 700, borderRadius: 10, padding: '1px 7px' }}>
+              {unreadCount}
+            </span>
+          )}
+        </div>
+        {unreadCount > 0 && (
+          <button
+            onClick={onMarkAllRead}
+            style={{ fontSize: 12, color: '#1a73e8', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: '3px 8px', borderRadius: 5, fontFamily: 'inherit' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+          >
+            Mark all read
+          </button>
+        )}
+      </div>
+
+      {/* List */}
+      <div style={{ overflowY: 'auto', flex: 1 }}>
+        {notifs.length === 0 ? (
+          <div style={{ padding: '48px 20px', textAlign: 'center' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <svg width={22} height={22} fill="none" viewBox="0 0 24 24" stroke="#9ca3af" strokeWidth={1.7}>
+                <path strokeLinecap="round" strokeLinejoin="round" d={IC.bell} />
+              </svg>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>All caught up!</div>
+            <div style={{ fontSize: 12, color: '#9ca3af' }}>No notifications yet.</div>
+          </div>
+        ) : (
+          notifs.map((n, i) => {
+            const cfg = NOTIF_CFG[n.type] || NOTIF_CFG.Custom
+            return (
+              <div
+                key={n._id}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 11,
+                  padding: '11px 14px',
+                  borderBottom: i < notifs.length - 1 ? '1px solid #f9fafb' : 'none',
+                  background: n.isRead ? 'white' : '#f8faff',
+                  cursor: n.link ? 'pointer' : 'default',
+                  transition: 'background 0.12s',
+                }}
+                onClick={() => handleClick(n)}
+                onMouseEnter={e => { if (n.link) e.currentTarget.style.background = n.isRead ? '#f9fafb' : '#eff6ff' }}
+                onMouseLeave={e => e.currentTarget.style.background = n.isRead ? 'white' : '#f8faff'}
+              >
+                {/* Icon */}
+                <div style={{ width: 34, height: 34, borderRadius: 9, background: cfg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                  <svg width={16} height={16} fill="none" viewBox="0 0 24 24" stroke={cfg.color} strokeWidth={1.9}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={cfg.icon} />
+                  </svg>
+                </div>
+
+                {/* Text */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: n.isRead ? 500 : 700, color: '#111827', lineHeight: 1.35 }}>{n.title}</div>
+                    {!n.isRead && (
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#1a73e8', flexShrink: 0, marginTop: 4 }} />
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2, lineHeight: 1.4 }}>{n.message}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{timeAgo(n.createdAt)}</div>
+                </div>
+
+                {/* Dismiss */}
+                <button
+                  onClick={e => { e.stopPropagation(); onDismiss(n._id) }}
+                  title="Dismiss"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d1d5db', padding: 3, borderRadius: 5, display: 'flex', flexShrink: 0, marginTop: 2 }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#6b7280'; e.currentTarget.style.background = '#f3f4f6' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = '#d1d5db'; e.currentTarget.style.background = 'none' }}
+                >
+                  <svg width={13} height={13} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '10px 14px', borderTop: '1px solid #f3f4f6', flexShrink: 0, textAlign: 'center' }}>
+        <button
+          onClick={() => { onClose(); navigate('/notifications') }}
+          style={{ fontSize: 12.5, color: '#1a73e8', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '4px 10px', borderRadius: 5 }}
+          onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
+          onMouseLeave={e => e.currentTarget.style.background = 'none'}
+        >
+          View all notifications
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Root layout ───────────────────────────────────────────────────────────────
 export default function AppLayout() {
   const { user }  = useSelector(s => s.auth)
   const dispatch  = useDispatch()
   const navigate  = useNavigate()
   const location  = useLocation()
-  const [collapsed, setCollapsed]       = useState(false)
+  const [collapsed,    setCollapsed]    = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [notifOpen,    setNotifOpen]    = useState(false)
+  const [notifs,       setNotifs]       = useState([])
+  const [unreadCount,  setUnreadCount]  = useState(0)
   const { chatUnread } = useChatContext() || { chatUnread: 0 }
 
   const isAdmin  = ['Admin', 'SuperAdmin'].includes(user?.role)
   const pageTitle = PAGE_TITLES[location.pathname] || 'Sandhya CRM'
+
+  const fetchNotifs = useCallback(async () => {
+    try {
+      const res = await getMyNotificationsApi()
+      setNotifs(res.data.data || [])
+      setUnreadCount(res.data.unreadCount || 0)
+    } catch {}
+  }, [])
+
+  // Poll every 30s for unread count
+  useEffect(() => {
+    if (!user) return
+    fetchNotifs()
+    const id = setInterval(fetchNotifs, 30000)
+    return () => clearInterval(id)
+  }, [user, fetchNotifs])
+
+  const handleMarkRead = async (id) => {
+    try {
+      await markNotificationReadApi(id)
+      setNotifs(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n))
+      setUnreadCount(prev => Math.max(0, prev - 1))
+    } catch {}
+  }
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsReadApi()
+      setNotifs(prev => prev.map(n => ({ ...n, isRead: true })))
+      setUnreadCount(0)
+    } catch {}
+  }
+
+  const handleDismiss = async (id) => {
+    try {
+      await dismissNotificationApi(id)
+      const dismissed = notifs.find(n => n._id === id)
+      setNotifs(prev => prev.filter(n => n._id !== id))
+      if (dismissed && !dismissed.isRead) setUnreadCount(prev => Math.max(0, prev - 1))
+    } catch {}
+  }
 
   const handleLogout = async () => {
     setSettingsOpen(false)
@@ -296,15 +512,16 @@ export default function AppLayout() {
 
         {/* RIGHT — bell + settings + avatar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {/* Notification bell */}
           <button
             title="Notifications"
-            onClick={() => navigate('/communications')}
-            style={{ ...hdrIconBtn(false), position: 'relative' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.18)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            onClick={() => { setNotifOpen(v => !v); setSettingsOpen(false) }}
+            style={{ ...hdrIconBtn(notifOpen), position: 'relative' }}
+            onMouseEnter={e => { if (!notifOpen) e.currentTarget.style.background = 'rgba(255,255,255,0.18)' }}
+            onMouseLeave={e => { if (!notifOpen) e.currentTarget.style.background = 'transparent' }}
           >
             <Icon d={IC.bell} size={20} />
-            {chatUnread > 0 && (
+            {unreadCount > 0 && (
               <div style={{
                 position: 'absolute', top: 2, right: 2,
                 background: '#ef4444', color: '#fff',
@@ -314,14 +531,14 @@ export default function AppLayout() {
                 padding: '0 3px', pointerEvents: 'none',
                 border: '1.5px solid rgba(255,255,255,0.3)',
               }}>
-                {chatUnread > 9 ? '9+' : chatUnread}
+                {unreadCount > 9 ? '9+' : unreadCount}
               </div>
             )}
           </button>
 
           <button
             title="Settings & Profile"
-            onClick={() => setSettingsOpen(v => !v)}
+            onClick={() => { setSettingsOpen(v => !v); setNotifOpen(false) }}
             style={hdrIconBtn(settingsOpen)}
             onMouseEnter={e => { if (!settingsOpen) e.currentTarget.style.background = 'rgba(255,255,255,0.18)' }}
             onMouseLeave={e => { if (!settingsOpen) e.currentTarget.style.background = settingsOpen ? 'rgba(255,255,255,0.22)' : 'transparent' }}
@@ -330,7 +547,7 @@ export default function AppLayout() {
           </button>
 
           <div
-            onClick={() => setSettingsOpen(v => !v)}
+            onClick={() => { setSettingsOpen(v => !v); setNotifOpen(false) }}
             style={{
               width: '36px', height: '36px', borderRadius: '50%',
               background: 'rgba(255,255,255,0.22)',
@@ -348,7 +565,18 @@ export default function AppLayout() {
           </div>
         </div>
 
-        {/* Dropdown (positioned inside header so it aligns to header right) */}
+        {/* Dropdowns */}
+        {notifOpen && (
+          <NotificationDropdown
+            notifs={notifs}
+            unreadCount={unreadCount}
+            onClose={() => setNotifOpen(false)}
+            onMarkRead={handleMarkRead}
+            onMarkAllRead={handleMarkAllRead}
+            onDismiss={handleDismiss}
+            navigate={navigate}
+          />
+        )}
         {settingsOpen && (
           <SettingsDropdown user={user} onLogout={handleLogout} onClose={() => setSettingsOpen(false)} />
         )}

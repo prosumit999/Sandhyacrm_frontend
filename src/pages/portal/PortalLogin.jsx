@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { portalLoginApi } from '../../api/portalApi'
 import { usePortal } from '../../context/PortalContext'
 import logoSvg from '../../assets/logosvg.svg'
@@ -103,6 +103,12 @@ export default function PortalLogin() {
                   <EyeIcon open={showPw} />
                 </button>
               </div>
+            </div>
+
+            <div style={{ textAlign: 'right', marginBottom: '14px', marginTop: '-8px' }}>
+              <Link to="/portal/forgot-password" style={{ fontSize: '12.5px', color: '#1a73e8', textDecoration: 'none' }}>
+                Forgot password?
+              </Link>
             </div>
 
             <button

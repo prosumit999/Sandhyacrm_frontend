@@ -327,15 +327,9 @@ const SEV_CFG = {
 }
 
 function StandardDashboard({ user, overview, loading, navigate }) {
-  const [custDays, setCustDays] = useState(30)
   const initials = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U'
   const st = overview?.stats || {}
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-
-  const filteredRenewals = (overview?.upcomingRenewals || []).filter(r => {
-    const d = Math.ceil((new Date(r.renewalDate) - new Date()) / 86400000)
-    return d <= custDays
-  })
 
   return (
     <div>
@@ -366,79 +360,14 @@ function StandardDashboard({ user, overview, loading, navigate }) {
       </div>
 
       {/* ── KPI row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '16px' }}>
-        <KpiCard loading={loading} label="My Customers"    value={st.totalCustomers  ?? '—'} sub={`${st.activeCustomers ?? 0} active · ${st.leadCustomers ?? 0} leads`}                    color="#1a73e8" icon={P.customers}     onClick={() => navigate('/customers')} />
-        <KpiCard loading={loading} label="Renewals (30d)"  value={st.upcomingRenewals ?? '—'} sub="Due in next 30 days"                                                                     color="#d97706" icon={P.subscriptions} onClick={() => navigate('/subscriptions')} />
-        <KpiCard loading={loading} label="Overdue Payments" value={st.overdueCount ?? '—'}    sub={st.overdueAmount ? fmtINR(st.overdueAmount) + ' outstanding' : 'All payments current'}   color="#dc2626" icon={P.invoices}      onClick={() => navigate('/invoices')} />
-        <KpiCard loading={loading} label="Pending Alerts"  value={(overview?.pendingAlerts?.length ?? '—')} sub="For your customers"                                                        color="#7c3aed" icon={P.alerts}        onClick={() => navigate('/alerts')} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px', marginBottom: '16px' }}>
+        <KpiCard loading={loading} label="My Customers"   value={st.totalCustomers ?? '—'}               sub={`${st.activeCustomers ?? 0} active · ${st.leadCustomers ?? 0} leads`} color="#1a73e8" icon={P.customers} onClick={() => navigate('/customers')} />
+        <KpiCard loading={loading} label="Open Tickets"   value={st.openTickets ?? '—'}                  sub="Support requests"                                                       color="#ea580c" icon={P.tickets}   onClick={() => navigate('/tickets')} />
+        <KpiCard loading={loading} label="Pending Alerts" value={overview?.pendingAlerts?.length ?? '—'} sub="For your customers"                                                     color="#7c3aed" icon={P.alerts}    onClick={() => navigate('/alerts')} />
       </div>
 
-      {/* ── main content row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '14px', marginBottom: '14px' }}>
-
-        {/* Upcoming renewals */}
-        <Panel
-          title="Upcoming Renewals"
-          subtitle="Active subscriptions due for renewal"
-          action={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {[30, 60, 90].map(d => (
-                <button key={d} onClick={() => setCustDays(d)}
-                  style={{ padding: '4px 10px', borderRadius: '5px', fontSize: '12px', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${custDays === d ? '#1a73e8' : 'gainsboro'}`, background: custDays === d ? '#eff6ff' : 'white', color: custDays === d ? '#1a73e8' : '#6b7280', transition: 'all 0.12s' }}>
-                  {d}d
-                </button>
-              ))}
-              <ViewAll to="/subscriptions" nav={navigate} />
-            </div>
-          }
-        >
-          {loading ? (
-            <div style={{ padding: '16px' }}>
-              {[...Array(5)].map((_, i) => <div key={i} style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}><Sk h={13} w="20%" /><Sk h={13} w="15%" /><Sk h={13} w="18%" /><Sk h={13} w="12%" /></div>)}
-            </div>
-          ) : filteredRenewals.length === 0 ? (
-            <div style={{ padding: '48px', textAlign: 'center' }}>
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>✓</div>
-              <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#374151' }}>No renewals in {custDays} days</div>
-              <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '3px' }}>All your customers are up to date.</div>
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                <thead>
-                  <tr>
-                    <TH>Customer</TH><TH>Software</TH><TH>Renewal Date</TH><TH right>Amount</TH><TH>Days Left</TH><TH>Payment</TH>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRenewals.map((r, i) => {
-                    const d = Math.ceil((new Date(r.renewalDate) - new Date()) / 86400000)
-                    const pmtCfg = { Paid: '#16a34a', Pending: '#b45309', Overdue: '#dc2626', Waived: '#6b7280' }
-                    const pmtBg  = { Paid: '#f0fdf4', Pending: '#fffbeb', Overdue: '#fef2f2', Waived: '#f3f4f6' }
-                    return (
-                      <tr key={r._id || i} style={{ borderTop: '1px solid #f3f4f6' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'white'}>
-                        <TD sub={r.customer?.phone}><span style={{ fontWeight: 600 }}>{r.customer?.name || '—'}</span></TD>
-                        <TD>{r.softwares?.map ? r.softwares.map(s => s.name).join(', ') : (r.softwares?.name || '—')}</TD>
-                        <TD><span style={{ whiteSpace: 'nowrap' }}>{fmtDate(r.renewalDate)}</span></TD>
-                        <TD right><span style={{ fontWeight: 600 }}>{r.amountCharged ? fmtINR(r.amountCharged) : '—'}</span></TD>
-                        <TD><DaysBadge days={d} /></TD>
-                        <TD>
-                          <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: pmtBg[r.paymentStatus] || '#f3f4f6', color: pmtCfg[r.paymentStatus] || '#6b7280' }}>
-                            {r.paymentStatus || '—'}
-                          </span>
-                        </TD>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Panel>
-
-        {/* My customers panel */}
+      {/* ── My Customers panel ── */}
+      <div style={{ marginBottom: '14px' }}>
         <Panel title="My Customers" subtitle={`${st.totalCustomers ?? 0} total assigned`} action={<ViewAll to="/customers" nav={navigate} />}>
           {loading ? (
             <div style={{ padding: '14px 18px' }}>
@@ -488,34 +417,6 @@ function StandardDashboard({ user, overview, loading, navigate }) {
           )}
         </Panel>
       </div>
-
-      {/* ── overdue invoices ── */}
-      {!loading && (overview?.overdueInvoices?.length > 0) && (
-        <Panel
-          title="Overdue Invoices"
-          subtitle={`${overview.overdueInvoices.length} invoice${overview.overdueInvoices.length !== 1 ? 's' : ''} need attention`}
-          action={<ViewAll to="/invoices" nav={navigate} />}
-        >
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-              <thead><tr><TH>Customer</TH><TH>Software</TH><TH>Invoice</TH><TH right>Amount Due</TH><TH>Created</TH></tr></thead>
-              <tbody>
-                {overview.overdueInvoices.slice(0, 5).map((inv, i) => (
-                  <tr key={inv._id || i} style={{ borderTop: '1px solid #f3f4f6' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#fff8f8'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'white'}>
-                    <TD sub={inv.customer?.phone}><span style={{ fontWeight: 600, color: '#111827' }}>{inv.customer?.name || '—'}</span></TD>
-                    <TD>{inv.software?.name || '—'}</TD>
-                    <TD><span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#374151' }}>{inv.invoiceNumber || '—'}</span></TD>
-                    <TD right><span style={{ fontWeight: 700, color: '#dc2626' }}>{fmtINR(inv.totalAmount)}</span></TD>
-                    <TD>{fmtDate(inv.createdAt)}</TD>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
-      )}
 
       {/* ── pending alerts strip ── */}
       {!loading && (overview?.pendingAlerts?.length > 0) && (
