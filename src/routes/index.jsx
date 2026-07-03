@@ -45,6 +45,8 @@ import Communications from '../pages/communications/Communications'
 import Notifications from '../pages/notifications/Notifications'
 import Teams from '../pages/teams/Teams'
 
+const ALLOW_PUBLIC_REGISTRATION = import.meta.env.VITE_ALLOW_PUBLIC_REGISTRATION === 'true'
+
 // ── Auth guard ───────────────────────────────────────────────────────────────
 function ProtectedRoute() {
   const { isAuthenticated, initializing } = useSelector((state) => state.auth)
@@ -57,6 +59,12 @@ function AdminRoute() {
   const { user } = useSelector((state) => state.auth)
   const isAdmin = ['Admin', 'SuperAdmin'].includes(user?.role)
   return isAdmin ? <Outlet /> : <Navigate to="/dashboard" replace />
+}
+
+// SuperAdmin-only guard — used for actions that can create privileged users
+function SuperAdminRoute() {
+  const { user } = useSelector((state) => state.auth)
+  return user?.role === 'SuperAdmin' ? <Outlet /> : <Navigate to="/dashboard" replace />
 }
 
 // ── Placeholder while a page hasn't been built yet ──────────────────────────
@@ -86,10 +94,10 @@ function ComingSoon({ title }) {
 //  │  /customers/:id          /customers/:id               Standard          │
 //  │  /softwares              /softwares                   Standard          │
 //  │  /softwares/:id          /softwares/:id               Standard          │
-//  │  /subscriptions          /subscriptions               Standard          │
-//  │  /subscriptions/:id      /subscriptions/:id           Standard          │
-//  │  /invoices               /invoices                    Standard          │
-//  │  /invoices/:id           /invoices/:id                Standard          │
+//  │  /subscriptions          /subscriptions               Admin             │
+//  │  /subscriptions/:id      /subscriptions/:id           Admin             │
+//  │  /invoices               /invoices                    Admin             │
+//  │  /invoices/:id           /invoices/:id                Admin             │
 //  │  /tickets                /tickets                     Standard          │
 //  │  /tickets/:id            /tickets/:id                 Standard          │
 //  │  /alerts                 /alerts                      Standard          │
@@ -105,7 +113,7 @@ export default function AppRoutes() {
     <Routes>
       {/* ── Public ── */}
       <Route path="/login"                  element={<Login />} />
-      <Route path="/register"               element={<Register />} />
+      <Route path="/register"               element={ALLOW_PUBLIC_REGISTRATION ? <Register /> : <Navigate to="/login" replace />} />
       <Route path="/forgot-password"        element={<ForgotPassword />} />
       <Route path="/reset-password/:token"  element={<ResetPassword />} />
 
@@ -134,13 +142,16 @@ export default function AppRoutes() {
 
           <Route path="/communications"       element={<Communications />} />
 
-          <Route path="/reports"              element={<Reports />} />
+          <Route element={<AdminRoute />}>
+            <Route path="/reports"            element={<Reports />} />
+            <Route path="/users"              element={<Users />} />
+            <Route path="/teams"              element={<Teams />} />
+            <Route path="/audit"              element={<AuditLogs />} />
+          </Route>
 
-          <Route path="/users"                element={<Users />} />
-          <Route path="/users/new"            element={<CreateUser />} />
-          <Route path="/teams"                element={<Teams />} />
-
-          <Route path="/audit"                element={<AuditLogs />} />
+          <Route element={<SuperAdminRoute />}>
+            <Route path="/users/new"          element={<CreateUser />} />
+          </Route>
 
           <Route path="/notifications"        element={<Notifications />} />
           <Route path="/settings"             element={<Settings />} />

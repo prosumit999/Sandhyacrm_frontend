@@ -20,7 +20,7 @@ export const forgotPasswordApi = (email) =>
 export const resetPasswordApi = (token, password) =>
   axiosInstance.post(`/auth/reset-password/${token}`, { password })
 
-// POST /api/v1/auth/register  (public — creates a Standard role account)
+// POST /api/v1/auth/register  (disabled unless ALLOW_PUBLIC_REGISTRATION=true)
 export const registerApi = (data) =>
   axiosInstance.post('/auth/register', data)
 

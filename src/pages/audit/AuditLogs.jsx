@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useCallback, useRef } from 'react'
-import { getAllAuditLogsApi, getAuditLogByIdApi } from '../../api/auditApi'
+import { getAllAuditLogsApi, getAuditLogByIdApi, exportAuditLogsApi } from '../../api/auditApi'
+import { downloadExport } from '../../utils/downloadExport'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtDate = (d) => {
@@ -403,6 +404,14 @@ export default function AuditLogs() {
     setPage(1)
   }
   const hasFilters = applied.action || applied.targetModel || applied.dateFrom || applied.dateTo
+  const handleExport = async () => {
+    const params = { format: 'csv' }
+    if (applied.action) params.action = applied.action
+    if (applied.targetModel) params.targetModel = applied.targetModel
+    if (applied.dateFrom) params.dateFrom = applied.dateFrom
+    if (applied.dateTo) params.dateTo = applied.dateTo
+    await downloadExport(() => exportAuditLogsApi(params), 'audit-logs-export.csv')
+  }
 
   // Client-side name search on already-fetched page
   const visibleLogs = filters.search
@@ -440,6 +449,11 @@ export default function AuditLogs() {
             style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1px solid gainsboro', borderRadius: 7, padding: '7px 13px', background: 'white', cursor: 'pointer', fontSize: 12.5, color: '#374151', fontFamily: 'inherit' }}>
             <Ic d={IC.refresh} size={13} color="#6b7280" />
             Refresh
+          </button>
+          <button onClick={handleExport}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1px solid gainsboro', borderRadius: 7, padding: '7px 13px', background: 'white', cursor: 'pointer', fontSize: 12.5, color: '#374151', fontFamily: 'inherit' }}>
+            <Ic d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" size={13} color="#6b7280" />
+            Export CSV
           </button>
         </div>
       </div>

@@ -4,11 +4,12 @@ import { useSelector } from 'react-redux'
 import { toastSuccess, toastError } from '../../utils/toast'
 import {
   getAllSubscriptionsApi, createSubscriptionApi,
-  updateSubscriptionApi, deleteSubscriptionApi, renewSubscriptionApi,
+  updateSubscriptionApi, deleteSubscriptionApi, renewSubscriptionApi, exportSubscriptionsApi,
 } from '../../api/subscriptionApi'
 import { getAllCustomersApi } from '../../api/customerApi'
 import { getAllSoftwaresApi } from '../../api/softwareApi'
 import { createInvoiceApi } from '../../api/invoiceApi'
+import { downloadExport } from '../../utils/downloadExport'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtINR  = n => n != null ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n) : '—'
@@ -716,6 +717,18 @@ export default function Subscriptions() {
 
   const hasFilters = filterStatus || filterPaymentStatus || filterBillingCycle
   const clearFilters = () => { setFilterStatus(''); setFilterPaymentStatus(''); setFilterBillingCycle('') }
+  const handleExport = async () => {
+    try {
+      const params = { format: 'csv' }
+      if (filterStatus) params.status = filterStatus
+      if (filterPaymentStatus) params.paymentStatus = filterPaymentStatus
+      if (filterBillingCycle) params.billingCycle = filterBillingCycle
+      await downloadExport(() => exportSubscriptionsApi(params), 'subscriptions-export.csv')
+      toastSuccess('Subscriptions export downloaded')
+    } catch (e) {
+      toastError(e?.response?.data?.message || 'Failed to export subscriptions')
+    }
+  }
 
   // Summary counts
   const activeCount  = subs.filter(s => s.status  === 'Active').length
@@ -733,6 +746,11 @@ export default function Subscriptions() {
             {loading ? 'Loading…' : `${pagination.total} total subscription${pagination.total !== 1 ? 's' : ''}`}
           </p>
         </div>
+        <button onClick={handleExport}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 13px', border: '1px solid gainsboro', borderRadius: '6px', background: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <Ic d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" size={14} />
+          Export CSV
+        </button>
       </div>
 
       {/* ── Auto-invoice success banner ── */}

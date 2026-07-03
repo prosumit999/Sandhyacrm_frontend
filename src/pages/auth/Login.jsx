@@ -6,6 +6,8 @@ import { loginUser, clearError } from '../../store/slices/authSlice'
 import { portalLoginApi } from '../../api/portalApi'
 import { usePortal } from '../../context/PortalContext'
 
+const ALLOW_PUBLIC_REGISTRATION = import.meta.env.VITE_ALLOW_PUBLIC_REGISTRATION === 'true'
+
 function EyeOpen() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor" width="17" height="17">
@@ -487,17 +489,19 @@ export default function Login() {
               {authLoading ? 'Signing in...' : 'Sign In'}
             </button>
 
-            <div style={s.registerRow}>
-              <span style={s.registerText}>New team member?</span>
-              <Link
-                to="/register"
-                style={s.registerLink}
-                onMouseOver={e => e.currentTarget.style.textDecoration = 'underline'}
-                onMouseOut={e => e.currentTarget.style.textDecoration = 'none'}
-              >
-                Create account
-              </Link>
-            </div>
+            {ALLOW_PUBLIC_REGISTRATION && (
+              <div style={s.registerRow}>
+                <span style={s.registerText}>New team member?</span>
+                <Link
+                  to="/register"
+                  style={s.registerLink}
+                  onMouseOver={e => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseOut={e => e.currentTarget.style.textDecoration = 'none'}
+                >
+                  Create account
+                </Link>
+              </div>
+            )}
           </form>
         </div>
 

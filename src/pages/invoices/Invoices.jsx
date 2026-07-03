@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { toastSuccess } from '../../utils/toast'
 import {
-  getAllInvoicesApi, createInvoiceApi, updateInvoiceApi, markInvoicePaidApi,
+  getAllInvoicesApi, createInvoiceApi, updateInvoiceApi, markInvoicePaidApi, exportInvoicesApi,
 } from '../../api/invoiceApi'
 import { getAllCustomersApi } from '../../api/customerApi'
 import { getCustomerSubscriptionsApi } from '../../api/customerApi'
+import { downloadExport } from '../../utils/downloadExport'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtINR  = n => n != null ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n) : '—'
@@ -593,6 +594,13 @@ export default function Invoices() {
 
   const hasFilters = filterPayment || filterType
   const clearFilters = () => { setFilterPayment(''); setFilterType('') }
+  const handleExport = async () => {
+    const params = { format: 'csv' }
+    if (filterPayment) params.paymentStatus = filterPayment
+    if (filterType) params.invoiceType = filterType
+    await downloadExport(() => exportInvoicesApi(params), 'invoices-export.csv')
+    toastSuccess('Invoices export downloaded')
+  }
 
   // Summary from current page
   const totalPaid    = invoices.filter(i => i.paymentStatus === 'Paid').reduce((a, i) => a + (i.totalAmount || 0), 0)
@@ -611,6 +619,11 @@ export default function Invoices() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button onClick={handleExport}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 13px', border: '1px solid gainsboro', borderRadius: '6px', background: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+            <Ic d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" size={14} />
+            Export CSV
+          </button>
           <ViewToggle view={view} setView={setView} />
           {isAdmin && (
             <button onClick={() => openDrawer('create')}

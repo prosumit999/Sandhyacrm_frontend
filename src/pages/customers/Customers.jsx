@@ -2,11 +2,12 @@
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import {
-  getAllCustomersApi, createCustomerApi, updateCustomerApi, deleteCustomerApi,
+  getAllCustomersApi, createCustomerApi, updateCustomerApi, deleteCustomerApi, exportCustomersApi,
 } from '../../api/customerApi'
 import { getAllUsersApi } from '../../api/userApi'
 import { enablePortalAccessApi } from '../../api/portalApi'
 import { toastSuccess, toastError } from '../../utils/toast'
+import { downloadExport } from '../../utils/downloadExport'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtDate = d => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -513,6 +514,18 @@ export default function Customers() {
     finally { setDelBusy(false) }
   }
 
+  const handleExport = async () => {
+    try {
+      const params = { format: 'csv' }
+      if (search) params.search = search
+      if (status) params.status = status
+      await downloadExport(() => exportCustomersApi(params), 'customers-export.csv')
+      toastSuccess('Customers export downloaded')
+    } catch (e) {
+      toastError(e?.response?.data?.message || 'Failed to export customers')
+    }
+  }
+
   const openEdit = (c) => {
     setModal({
       mode: 'edit',
@@ -535,6 +548,11 @@ export default function Customers() {
             {loading ? 'Loading…' : `${pagination.total} total customer${pagination.total !== 1 ? 's' : ''}`}
           </p>
         </div>
+        <button onClick={handleExport}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 13px', border: '1px solid gainsboro', borderRadius: '6px', background: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <Ic d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16" size={14} />
+          Export CSV
+        </button>
       </div>
 
       {/* ── Filter bar ── */}

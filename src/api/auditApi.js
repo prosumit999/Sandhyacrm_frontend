@@ -7,3 +7,7 @@ export const getAllAuditLogsApi = (params) =>
 // GET /api/v1/audit/:id  — SuperAdmin, Admin
 export const getAuditLogByIdApi = (id) =>
   axiosInstance.get(`/audit/${id}`)
+
+// GET /api/v1/audit/export
+export const exportAuditLogsApi = (params) =>
+  axiosInstance.get('/audit/export', { params, responseType: 'blob' })

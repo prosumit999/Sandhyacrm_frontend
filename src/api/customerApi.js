@@ -27,3 +27,7 @@ export const getCustomerSubscriptionsApi = (id) =>
 // GET /api/v1/customers/:id/invoices
 export const getCustomerInvoicesApi = (id) =>
   axiosInstance.get(`/customers/${id}/invoices`)
+
+// GET /api/v1/customers/export
+export const exportCustomersApi = (params) =>
+  axiosInstance.get('/customers/export', { params, responseType: 'blob' })

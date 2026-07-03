@@ -19,3 +19,7 @@ export const updateInvoiceApi = (id, data) =>
 // PATCH /api/v1/invoices/:id/mark-paid  — SuperAdmin, Admin
 export const markInvoicePaidApi = (id, data) =>
   axiosInstance.patch(`/invoices/${id}/mark-paid`, data)
+
+// GET /api/v1/invoices/export
+export const exportInvoicesApi = (params) =>
+  axiosInstance.get('/invoices/export', { params, responseType: 'blob' })

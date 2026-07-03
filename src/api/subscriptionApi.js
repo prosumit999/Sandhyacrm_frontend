@@ -23,3 +23,7 @@ export const deleteSubscriptionApi = (id) =>
 // POST /api/v1/subscriptions/:id/renew  — SuperAdmin, Admin
 export const renewSubscriptionApi = (id, data) =>
   axiosInstance.post(`/subscriptions/${id}/renew`, data)
+
+// GET /api/v1/subscriptions/export
+export const exportSubscriptionsApi = (params) =>
+  axiosInstance.get('/subscriptions/export', { params, responseType: 'blob' })
