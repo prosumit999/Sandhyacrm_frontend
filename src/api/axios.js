@@ -1,7 +1,8 @@
 import axios from 'axios'
+import { getApiBaseUrl } from './apiBase'
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
+  baseURL: getApiBaseUrl(),
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
   // Required: the backend sets httpOnly cookies; credentials must be included

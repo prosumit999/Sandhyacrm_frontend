@@ -2,8 +2,9 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import { useSelector } from 'react-redux'
 import { io } from 'socket.io-client'
 import { getConversationsApi } from '../api/chatApi'
+import { getSocketBaseUrl } from '../api/apiBase'
 
-const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1').replace('/api/v1', '')
+const SOCKET_URL = getSocketBaseUrl()
 
 const ChatContext = createContext(null)
 
