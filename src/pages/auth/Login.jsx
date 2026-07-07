@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { loginUser, clearError } from '../../store/slices/authSlice'
 import { portalLoginApi } from '../../api/portalApi'
 import { usePortal } from '../../context/PortalContext'
+import logo from '../../assets/logosvg.svg'
 
 const ALLOW_PUBLIC_REGISTRATION = import.meta.env.VITE_ALLOW_PUBLIC_REGISTRATION === 'true'
 
@@ -170,16 +171,12 @@ const s = {
     gap: '10px',
     marginBottom: '44px',
   },
-  logoIcon: {
-    width: '34px',
-    height: '34px',
-    background: '#1a73e8',
-    borderRadius: '8px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
+	  logoIcon: {
+	    width: '42px',
+	    height: '42px',
+	    objectFit: 'contain',
+	    flexShrink: 0,
+	  },
   logoText: {
     fontSize: '13.5px',
     fontWeight: 700,
@@ -387,15 +384,11 @@ export default function Login() {
         {/* ── Left: Form ── */}
         <div style={s.left}>
 
-          {/* Logo */}
-          <div style={s.logo}>
-            <div style={s.logoIcon}>
-              <svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={2.2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
-              </svg>
-            </div>
-            <span style={s.logoText}>SANDHYA CRM</span>
-          </div>
+	          {/* Logo */}
+	          <div style={s.logo}>
+	            <img src={logo} alt="Sandhya logo" style={s.logoIcon} />
+	            <span style={s.logoText}>SANDHYA CRM</span>
+	          </div>
 
           {/* Heading */}
           <h1 style={s.h1}>Sign in</h1>
