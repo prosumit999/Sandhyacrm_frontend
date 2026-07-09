@@ -158,6 +158,7 @@ const BLANK = {
   techStack: [],
   documentationUrl: '', setupCommand: '', envNotes: '', deploymentNotes: '',
   credentialVaultUrl: '', hostingLoginRef: '', domainLoginRef: '', cloudConsoleRef: '', credentialNotes: '',
+  deploymentPlatform: '', deploymentBranch: '', deploymentUrl: '', buildStatus: 'Unknown', lastDeployedAt: '',
   liveUrl: '', playStoreUrl: '', appStoreUrl: '', downloadUrl: '', githubRepoUrl: '',
   hostingProvider: '', hostingExpiryDate: '', domainProvider: '',
   domainExpiryDate: '', sslExpiryDate: '',
@@ -176,6 +177,7 @@ function SoftwareDrawer({ mode, initial, onClose, onSaved, users, teams }) {
       hostingExpiryDate: initial.hostingExpiryDate ? initial.hostingExpiryDate.slice(0, 10) : '',
       domainExpiryDate:  initial.domainExpiryDate  ? initial.domainExpiryDate.slice(0, 10)  : '',
       sslExpiryDate:     initial.sslExpiryDate     ? initial.sslExpiryDate.slice(0, 10)     : '',
+      lastDeployedAt:    initial.lastDeployedAt    ? initial.lastDeployedAt.slice(0, 10)    : '',
       techStack:         initial.techStack || [],
     }
   })
@@ -197,6 +199,7 @@ function SoftwareDrawer({ mode, initial, onClose, onSaved, users, teams }) {
       if (!payload.hostingExpiryDate) delete payload.hostingExpiryDate
       if (!payload.domainExpiryDate)  delete payload.domainExpiryDate
       if (!payload.sslExpiryDate)     delete payload.sslExpiryDate
+      if (!payload.lastDeployedAt)    delete payload.lastDeployedAt
       if (!payload.managedBy)         delete payload.managedBy
       if (!payload.team)              delete payload.team
       if (mode === 'create') { await createSoftwareApi(payload) }
@@ -307,6 +310,28 @@ function SoftwareDrawer({ mode, initial, onClose, onSaved, users, teams }) {
             </Field>
             <Field label="Credential Notes" span={2}>
               <textarea value={form.credentialNotes} onChange={e => set('credentialNotes', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="Where credentials are stored, access owner, MFA notes. Do not paste passwords here." rows={3} style={inpStyle({ resize: 'vertical', lineHeight: 1.5 })} />
+            </Field>
+          </div>
+
+          {/* ── Deployment Tracking ── */}
+          <SectionLabel label="Deployment Tracking" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <Field label="Deploy Platform">
+              <input value={form.deploymentPlatform} onChange={e => set('deploymentPlatform', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="Vercel, Render, AWS, cPanel…" style={inpStyle()} />
+            </Field>
+            <Field label="Deploy Branch">
+              <input value={form.deploymentBranch} onChange={e => set('deploymentBranch', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="main, production, release/v1" style={inpStyle()} />
+            </Field>
+            <Field label="Deploy URL" span={2}>
+              <input value={form.deploymentUrl} onChange={e => set('deploymentUrl', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="https://deploy.example.com/project" style={inpStyle()} />
+            </Field>
+            <Field label="Build Status">
+              <select value={form.buildStatus} onChange={e => set('buildStatus', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} style={inpStyle({ background: 'white' })}>
+                {['Unknown', 'Passing', 'Failed', 'Pending', 'NotConfigured'].map(s => <option key={s}>{s}</option>)}
+              </select>
+            </Field>
+            <Field label="Last Deployed">
+              <input type="date" value={form.lastDeployedAt} onChange={e => set('lastDeployedAt', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} style={inpStyle()} />
             </Field>
           </div>
 
@@ -582,6 +607,7 @@ export default function Softwares() {
       hostingExpiryDate: sw.hostingExpiryDate ? sw.hostingExpiryDate.slice(0, 10) : '',
       domainExpiryDate:  sw.domainExpiryDate  ? sw.domainExpiryDate.slice(0, 10)  : '',
       sslExpiryDate:     sw.sslExpiryDate     ? sw.sslExpiryDate.slice(0, 10)     : '',
+      lastDeployedAt:    sw.lastDeployedAt    ? sw.lastDeployedAt.slice(0, 10)    : '',
     }
   })
 

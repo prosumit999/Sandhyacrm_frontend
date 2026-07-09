@@ -14,6 +14,7 @@ const SW_TYPES      = ['Desktop', 'Mobile', 'Web', 'SAAS', 'API', 'PAAS']
 const SW_STATUSES   = ['Live', 'Broken', 'Maintenance', 'Development', 'Paused']
 const BILLING       = ['Monthly', 'Quarterly', 'HalfYearly', 'Yearly', 'OneTime']
 const BUILT_FOR     = ['Client', 'SAAS', 'Internal']
+const BUILD_STATUSES = ['Unknown', 'Passing', 'Failed', 'Pending', 'NotConfigured']
 
 // ─── formatters ───────────────────────────────────────────────────────────────
 const fmtINR  = n => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0)
@@ -59,6 +60,18 @@ function PaymentBadge({ status }) {
   }
   const s = m[status] || m.Pending
   return <span style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}`, borderRadius: 4, padding: '1px 8px', fontSize: 11, fontWeight: 600 }}>{status}</span>
+}
+
+function BuildStatusBadge({ status }) {
+  const m = {
+    Passing:       { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
+    Failed:        { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+    Pending:       { bg: '#fffbeb', color: '#b45309', border: '#fde68a' },
+    NotConfigured: { bg: '#f9fafb', color: '#6b7280', border: '#e5e7eb' },
+    Unknown:       { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+  }
+  const s = m[status] || m.Unknown
+  return <span style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}`, borderRadius: 4, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>{status || 'Unknown'}</span>
 }
 
 // ─── infra expiry indicator ────────────────────────────────────────────────────
@@ -260,6 +273,7 @@ export default function SoftwareDetail() {
     version: '', status: 'Live', builtFor: 'Client', techStack: [],
     documentationUrl: '', setupCommand: '', envNotes: '', deploymentNotes: '',
     credentialVaultUrl: '', hostingLoginRef: '', domainLoginRef: '', cloudConsoleRef: '', credentialNotes: '',
+    deploymentPlatform: '', deploymentBranch: '', deploymentUrl: '', buildStatus: 'Unknown', lastDeployedAt: '',
     liveUrl: '', playStoreUrl: '', appStoreUrl: '', downloadUrl: '', githubRepoUrl: '',
     hostingProvider: '', hostingExpiryDate: '',
     domainProvider: '', domainExpiryDate: '',
@@ -298,6 +312,11 @@ export default function SoftwareDetail() {
           domainLoginRef:    data.domainLoginRef    || '',
           cloudConsoleRef:   data.cloudConsoleRef   || '',
           credentialNotes:   data.credentialNotes   || '',
+          deploymentPlatform:data.deploymentPlatform|| '',
+          deploymentBranch:  data.deploymentBranch  || '',
+          deploymentUrl:     data.deploymentUrl     || '',
+          buildStatus:       data.buildStatus       || 'Unknown',
+          lastDeployedAt:    data.lastDeployedAt    ? data.lastDeployedAt.slice(0, 10) : '',
           liveUrl:           data.liveUrl           || '',
           playStoreUrl:      data.playStoreUrl      || '',
           appStoreUrl:       data.appStoreUrl       || '',
@@ -347,6 +366,7 @@ export default function SoftwareDetail() {
         domainExpiryDate:  form.domainExpiryDate  || undefined,
         sslExpiryDate:     form.sslExpiryDate     || undefined,
         managedBy:         form.managedBy         || undefined,
+        lastDeployedAt:    form.lastDeployedAt    || undefined,
       }
       const res = await updateSoftwareApi(id, body)
       setSw(res.data?.data || res.data)
@@ -498,6 +518,18 @@ export default function SoftwareDetail() {
                 <DocBlock label="Domain Login Ref">{sw?.domainLoginRef}</DocBlock>
                 <DocBlock label="Cloud Console Ref">{sw?.cloudConsoleRef}</DocBlock>
                 <DocBlock label="Credential Notes">{sw?.credentialNotes}</DocBlock>
+              </div>
+            </Card>
+          )}
+
+          {(sw?.deploymentPlatform || sw?.deploymentBranch || sw?.deploymentUrl || sw?.buildStatus || sw?.lastDeployedAt) && (
+            <Card title="Deployment">
+              <InfoLine label="Platform">{sw?.deploymentPlatform || <span style={{ color: '#d1d5db' }}>Not set</span>}</InfoLine>
+              <InfoLine label="Branch">{sw?.deploymentBranch ? <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{sw.deploymentBranch}</span> : <span style={{ color: '#d1d5db' }}>Not set</span>}</InfoLine>
+              <InfoLine label="Build Status"><BuildStatusBadge status={sw?.buildStatus} /></InfoLine>
+              <InfoLine label="Last Deployed">{fmtDate(sw?.lastDeployedAt)}</InfoLine>
+              <div style={{ marginTop: 10 }}>
+                <UrlLink label="Deploy URL" url={sw?.deploymentUrl} icon="Deploy" />
               </div>
             </Card>
           )}
@@ -754,6 +786,24 @@ export default function SoftwareDetail() {
               </FRow>
               <FRow>
                 <div><Label>Credential Notes</Label><FTextarea rows={3} value={form.credentialNotes} onChange={e => setForm(f => ({ ...f, credentialNotes: e.target.value }))} placeholder="Where credentials are stored, access owner, MFA notes. Do not paste passwords here." /></div>
+              </FRow>
+
+              <SHdr>Deployment Tracking</SHdr>
+              <FRow cols={2}>
+                <div><Label>Deploy Platform</Label><FInput value={form.deploymentPlatform} onChange={e => setForm(f => ({ ...f, deploymentPlatform: e.target.value }))} placeholder="Vercel, Render, AWS, cPanel…" /></div>
+                <div><Label>Deploy Branch</Label><FInput value={form.deploymentBranch} onChange={e => setForm(f => ({ ...f, deploymentBranch: e.target.value }))} placeholder="main, production, release/v1" /></div>
+              </FRow>
+              <FRow>
+                <div><Label>Deploy URL</Label><FInput value={form.deploymentUrl} onChange={e => setForm(f => ({ ...f, deploymentUrl: e.target.value }))} placeholder="https://deploy.example.com/project" /></div>
+              </FRow>
+              <FRow cols={2}>
+                <div>
+                  <Label>Build Status</Label>
+                  <FSelect value={form.buildStatus} onChange={e => setForm(f => ({ ...f, buildStatus: e.target.value }))}>
+                    {BUILD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </FSelect>
+                </div>
+                <div><Label>Last Deployed</Label><FInput type="date" value={form.lastDeployedAt} onChange={e => setForm(f => ({ ...f, lastDeployedAt: e.target.value }))} /></div>
               </FRow>
 
               <SHdr>URLs</SHdr>
