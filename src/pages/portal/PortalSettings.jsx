@@ -118,7 +118,15 @@ export default function PortalSettings() {
   const { customer, setCustomer } = usePortal()
 
   const [editing,  setEditing]  = useState(false)
-  const [form,     setForm]     = useState({ name: customer?.name || '', phone: customer?.phone || '' })
+  const [form,     setForm]     = useState({
+    name: customer?.name || '',
+    phone: customer?.phone || '',
+    whatsapp: customer?.whatsapp || '',
+    businessName: customer?.businessName || '',
+    city: customer?.address?.city || '',
+    state: customer?.address?.state || '',
+    country: customer?.address?.country || 'India',
+  })
   const [saving,   setSaving]   = useState(false)
   const [profOk,   setProfOk]   = useState('')
   const [profErr,  setProfErr]  = useState('')
@@ -129,7 +137,15 @@ export default function PortalSettings() {
   const [pwErr,    setPwErr]    = useState('')
 
   const startEdit = () => {
-    setForm({ name: customer?.name || '', phone: customer?.phone || '' })
+    setForm({
+      name: customer?.name || '',
+      phone: customer?.phone || '',
+      whatsapp: customer?.whatsapp || '',
+      businessName: customer?.businessName || '',
+      city: customer?.address?.city || '',
+      state: customer?.address?.state || '',
+      country: customer?.address?.country || 'India',
+    })
     setProfOk(''); setProfErr('')
     setEditing(true)
   }
@@ -139,7 +155,17 @@ export default function PortalSettings() {
     if (!form.name.trim()) { setProfErr('Name is required.'); return }
     setSaving(true); setProfOk(''); setProfErr('')
     try {
-      const res = await portalUpdateMeApi({ name: form.name.trim(), phone: form.phone.trim() })
+      const res = await portalUpdateMeApi({
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        whatsapp: form.whatsapp.trim(),
+        businessName: form.businessName.trim(),
+        address: {
+          city: form.city.trim(),
+          state: form.state.trim(),
+          country: form.country.trim() || 'India',
+        },
+      })
       const updated = res.data?.data
       if (updated) setCustomer(prev => ({ ...prev, ...updated }))
       setEditing(false)
@@ -196,6 +222,10 @@ export default function PortalSettings() {
               {[
                 ['Name',  c.name  || '—'],
                 ['Phone', c.phone || '—'],
+                ['WhatsApp', c.whatsapp || '—'],
+                ['Business', c.businessName || '—'],
+                ['City', c.address?.city || '—'],
+                ['State', c.address?.state || '—'],
               ].map(([label, val]) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
                   <span style={{ width: 80, fontSize: 11.5, fontWeight: 600, color: '#9ca3af', flexShrink: 0 }}>{label}</span>
@@ -217,6 +247,23 @@ export default function PortalSettings() {
                 </Field>
                 <Field label="Phone">
                   <TextInput value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+91 XXXXX XXXXX" />
+                </Field>
+                <Field label="WhatsApp">
+                  <TextInput value={form.whatsapp} onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="+91 XXXXX XXXXX" />
+                </Field>
+                <Field label="Business name">
+                  <TextInput value={form.businessName} onChange={e => setForm(f => ({ ...f, businessName: e.target.value }))} placeholder="Business / company name" />
+                </Field>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <Field label="City">
+                    <TextInput value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder="City" />
+                  </Field>
+                  <Field label="State">
+                    <TextInput value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} placeholder="State" />
+                  </Field>
+                </div>
+                <Field label="Country">
+                  <TextInput value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} placeholder="India" />
                 </Field>
                 <Field label="Email" hint="Contact support to change email.">
                   <TextInput value={c.email} readOnly />
@@ -265,10 +312,8 @@ export default function PortalSettings() {
         {/* ── Account Information ── */}
         <Card title="Account Information" subtitle="Read-only account details">
           {[
-            ['Business',   c.businessName       || '—'],
             ['Subscribed', c.Subscriptions       || '—'],
-            ['City',       c.address?.city       || '—'],
-            ['State',      c.address?.state      || '—'],
+            ['Country',    c.address?.country    || '—'],
             ['Member since', fmtDate(c.createdAt)],
           ].map(([label, val]) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f9fafb' }}>

@@ -15,6 +15,7 @@ export const portalResetPasswordApi     = (token, data) => portalAxios.post(`/po
 export const portalDashboardApi    = ()        => portalAxios.get('/portal/dashboard')
 export const portalSubscriptionsApi= ()        => portalAxios.get('/portal/subscriptions')
 export const portalInvoicesApi     = ()        => portalAxios.get('/portal/invoices')
+export const portalSubmitPaymentReferenceApi = (id, data) => portalAxios.post(`/portal/invoices/${id}/payment-reference`, data)
 export const portalAlertsApi       = ()        => portalAxios.get('/portal/alerts')
 export const portalTicketsApi      = ()        => portalAxios.get('/portal/tickets')
 export const portalCreateTicketApi = (data)   => portalAxios.post('/portal/tickets', data)

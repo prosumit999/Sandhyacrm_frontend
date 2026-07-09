@@ -24,6 +24,13 @@ function SoftwareCard({ sw, purchased, sub }) {
   const days = sub?.renewalDate ? daysLeft(sub.renewalDate) : null
   const isExp  = days !== null && days < 0
   const isWarn = days !== null && days >= 0 && days <= 30
+  const links = [
+    ['Live', sw.liveUrl],
+    ['Download', sw.downloadUrl],
+    ['Play Store', sw.playStoreUrl],
+    ['App Store', sw.appStoreUrl],
+    ['Docs', sw.documentationUrl],
+  ].filter(([, url]) => url)
 
   return (
     <div style={{ background: 'white', border: `1px solid ${purchased ? '#bfdbfe' : 'gainsboro'}`, borderRadius: '8px', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', position: 'relative' }}>
@@ -67,6 +74,20 @@ function SoftwareCard({ sw, purchased, sub }) {
             <span style={{ color: '#94a3b8' }}>Amount</span>
             <span style={{ color: '#334155', fontWeight: 600 }}>{fmtINR(sub.amountCharged)}</span>
           </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}>
+            <span style={{ color: '#94a3b8' }}>Billing</span>
+            <span style={{ color: '#334155', fontWeight: 600 }}>{sub.billingCycle || '—'}</span>
+          </div>
+          {links.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+              {links.map(([label, url]) => (
+                <a key={label} href={url} target="_blank" rel="noreferrer"
+                  style={{ fontSize: 11.5, fontWeight: 700, color: '#1a73e8', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 5, padding: '3px 8px', textDecoration: 'none' }}>
+                  {label}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>

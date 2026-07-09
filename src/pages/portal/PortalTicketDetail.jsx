@@ -14,6 +14,15 @@ const statusColor = s => {
   return '#475569'
 }
 
+const slaLabel = dueBy => {
+  if (!dueBy) return { text: 'Not set', color: '#94a3b8' }
+  const due = new Date(dueBy)
+  const diff = due - new Date()
+  if (diff < 0) return { text: `${Math.ceil(Math.abs(diff) / 3600000)}h overdue`, color: '#dc2626' }
+  if (diff <= 24 * 3600000) return { text: `${Math.ceil(diff / 3600000)}h left`, color: '#d97706' }
+  return { text: fmtDate(dueBy), color: '#334155' }
+}
+
 const Icon = ({ d, size = 18 }) => (
   <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
     <path strokeLinecap="round" strokeLinejoin="round" d={d} />
@@ -66,6 +75,13 @@ export default function PortalTicketDetail() {
 
   const isClosed = ['Resolved', 'Closed'].includes(ticket.status)
   const publicReplies = (ticket.replies || []).filter(r => !r.isInternal)
+  const sla = slaLabel(ticket.dueBy)
+  const ticketStats = [
+    ['Assigned to', ticket.assignedTo?.name || 'Support Team'],
+    ['SLA', sla.text, sla.color],
+    ['Replies', publicReplies.length],
+    ...(ticket.resolvedAt ? [['Resolved', fmtDate(ticket.resolvedAt)]] : []),
+  ]
 
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", maxWidth: '860px' }}>
@@ -96,6 +112,23 @@ export default function PortalTicketDetail() {
             {ticket.status === 'InProgress' ? 'In Progress' : ticket.status === 'WaitingOnClient' ? 'Waiting on Client' : ticket.status}
           </span>
         </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px', marginTop: '18px' }}>
+          {ticketStats.map(([label, value, color]) => (
+            <div key={label} style={{ border: '1px solid #eef2f7', borderRadius: '7px', padding: '10px 12px', background: '#fafbfc' }}>
+              <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#b0bec5', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '4px' }}>{label}</div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: color || '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div>
+            </div>
+          ))}
+        </div>
+
+        {ticket.resolutionSummary && (
+          <div style={{ marginTop: '14px', border: '1px solid #bbf7d0', background: '#f0fdf4', borderRadius: '7px', padding: '11px 13px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '4px' }}>Resolution</div>
+            <div style={{ fontSize: '13px', color: '#166534', lineHeight: 1.55 }}>{ticket.resolutionSummary}</div>
+            {ticket.resolvedBy?.name && <div style={{ fontSize: '11.5px', color: '#22c55e', marginTop: '6px' }}>Resolved by {ticket.resolvedBy.name}</div>}
+          </div>
+        )}
       </div>
 
       {/* Thread */}
@@ -110,6 +143,9 @@ export default function PortalTicketDetail() {
           {/* Original message */}
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <div style={{ maxWidth: '80%' }}>
+              <div style={{ textAlign: 'right', marginBottom: '5px' }}>
+                <span style={{ display: 'inline-block', background: '#eff6ff', color: '#1a73e8', border: '1px solid #bfdbfe', borderRadius: '999px', padding: '2px 8px', fontSize: '10.5px', fontWeight: 700 }}>You</span>
+              </div>
               <div style={{ background: '#1a73e8', borderRadius: '12px 12px 4px 12px', padding: '12px 16px' }}>
                 <p style={{ margin: 0, fontSize: '14px', color: 'white', lineHeight: 1.6 }}>{ticket.description}</p>
               </div>
@@ -128,6 +164,20 @@ export default function PortalTicketDetail() {
             return (
               <div key={i} style={{ display: 'flex', justifyContent: isCustomer ? 'flex-end' : 'flex-start' }}>
                 <div style={{ maxWidth: '80%' }}>
+                  <div style={{ textAlign: isCustomer ? 'right' : 'left', marginBottom: '5px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      background: isCustomer ? '#eff6ff' : '#f8fafc',
+                      color: isCustomer ? '#1a73e8' : '#64748b',
+                      border: `1px solid ${isCustomer ? '#bfdbfe' : '#e2e8f0'}`,
+                      borderRadius: '999px',
+                      padding: '2px 8px',
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                    }}>
+                      {isCustomer ? 'You' : 'Support'}
+                    </span>
+                  </div>
                   <div style={{
                     background: isCustomer ? '#1a73e8' : 'white',
                     border: isCustomer ? 'none' : '1px solid #e5e7eb',
