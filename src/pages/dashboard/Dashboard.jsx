@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   getKPIsApi, getUpcomingRenewalsApi, getAlertSummaryApi,
   getRecentActivityApi, getSoftwareStatusApi, getInfraAlertsApi,
-  getMyOverviewApi,
+  getOperationalAlertsApi, getMyOverviewApi,
 } from '../../api/dashboardApi'
 
 // ── Formatters ────────────────────────────────────────────────────────────────
@@ -209,6 +209,7 @@ export default function Dashboard() {
   const [activity, setActivity] = useState([])
   const [software, setSoftware] = useState(null)
   const [infra,    setInfra]    = useState([])
+  const [opsAlerts, setOpsAlerts] = useState(null)
   const [overview, setOverview] = useState(null)  // Standard user personal data
   const [loading,  setLoading]  = useState(true)
   const [days,     setDays]     = useState(30)
@@ -219,9 +220,10 @@ export default function Dashboard() {
       setLoading(true)
       try {
         if (isAdmin) {
-          const [renewRes, kpiRes, alertRes, actRes, swRes, infraRes] = await Promise.all([
+          const [renewRes, kpiRes, alertRes, actRes, swRes, infraRes, opsRes] = await Promise.all([
             getUpcomingRenewalsApi(), getKPIsApi(), getAlertSummaryApi(),
             getRecentActivityApi(), getSoftwareStatusApi(), getInfraAlertsApi(),
+            getOperationalAlertsApi(),
           ])
           if (!cancelled) {
             setRenewals(renewRes.data.data || [])
@@ -230,6 +232,7 @@ export default function Dashboard() {
             setActivity(actRes.data.data || [])
             setSoftware(swRes.data.data)
             setInfra(infraRes.data.data || [])
+            setOpsAlerts(opsRes.data.data)
           }
         } else {
           const res = await getMyOverviewApi()
@@ -286,12 +289,17 @@ export default function Dashboard() {
           </div>
 
           {/* Row 3 — Renewals + Alert Summary */}
+          <div style={{ marginBottom: '14px' }}>
+            <OperationalAlertsPanel data={opsAlerts} loading={loading} navigate={navigate} />
+          </div>
+
+          {/* Row 4 — Renewals + Alert Summary */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '14px', marginBottom: '14px' }}>
             <RenewalsPanel renewals={filtered} loading={loading} days={days} setDays={setDays} navigate={navigate} />
             <AlertSummaryPanel alerts={alerts} infra={infra} loading={loading} alertTotal={alertTotal} navigate={navigate} />
           </div>
 
-          {/* Row 4 — Activity + Software Status */}
+          {/* Row 5 — Activity + Software Status */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '14px' }}>
             <ActivityPanel activity={activity} loading={loading} navigate={navigate} />
             <SoftwareStatusPanel software={software} loading={loading} navigate={navigate} />
@@ -451,6 +459,77 @@ function StandardDashboard({ user, overview, loading, navigate }) {
 // ─────────────────────────────────────────────────────────────────────────────
 //  PANELS
 // ─────────────────────────────────────────────────────────────────────────────
+
+function AlertItem({ title, sub, tone = 'blue', onClick }) {
+  const tones = {
+    red: ['#dc2626', '#fef2f2', '#fecaca'],
+    amber: ['#b45309', '#fffbeb', '#fde68a'],
+    blue: ['#1a73e8', '#eff6ff', '#bfdbfe'],
+    gray: ['#6b7280', '#f9fafb', '#e5e7eb'],
+  }
+  const [color, bg, border] = tones[tone] || tones.blue
+  return (
+    <button onClick={onClick}
+      style={{ textAlign: 'left', background: bg, border: `1px solid ${border}`, borderRadius: 7, padding: '9px 11px', cursor: onClick ? 'pointer' : 'default', fontFamily: 'inherit', minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+      </div>
+      {sub && <div style={{ fontSize: 11.5, color: '#6b7280', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
+    </button>
+  )
+}
+
+function OperationalAlertsPanel({ data, loading, navigate }) {
+  const summary = data?.summary || {}
+  const total = Object.values(summary).reduce((a, v) => a + (v || 0), 0)
+
+  return (
+    <Panel title="Operational Alerts" subtitle="Missing GitHub, expiry, billing, and SLA risks" action={<span style={{ fontSize: 12, fontWeight: 700, color: total ? '#dc2626' : '#16a34a' }}>{loading ? '' : `${total} open`}</span>}>
+      {loading ? (
+        <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+          {[...Array(4)].map((_, i) => <Sk key={i} h={62} />)}
+        </div>
+      ) : total === 0 ? (
+        <div style={{ padding: '22px 18px', fontSize: 13, color: '#16a34a', fontWeight: 600 }}>All operational checks look clear.</div>
+      ) : (
+        <div style={{ padding: 14, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: 8 }}>{summary.missingGithub || 0}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 8 }}>Missing GitHub</div>
+            {(data?.missingGithub || []).slice(0, 3).map(sw => (
+              <AlertItem key={sw._id} title={sw.name} sub={sw.developer?.name || sw.type} tone="blue" onClick={() => navigate(`/softwares/${sw._id}`)} />
+            ))}
+          </div>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: 8 }}>{summary.expiringInfra || 0}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 8 }}>SSL / Domain</div>
+            {(data?.expiringInfra || []).slice(0, 3).map(sw => {
+              const domainDays = sw.domainExpiryDate ? daysLeft(sw.domainExpiryDate) : null
+              const sslDays = sw.sslExpiryDate ? daysLeft(sw.sslExpiryDate) : null
+              const worst = [domainDays, sslDays].filter(v => v != null).sort((a, b) => a - b)[0]
+              return <AlertItem key={sw._id} title={sw.name} sub={`${worst <= 0 ? 'Expired' : `${worst}d left`}`} tone={worst <= 7 ? 'red' : 'amber'} onClick={() => navigate(`/softwares/${sw._id}`)} />
+            })}
+          </div>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: 8 }}>{summary.unpaidInvoices || 0}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 8 }}>Unpaid Invoices</div>
+            {(data?.unpaidInvoices || []).slice(0, 3).map(inv => (
+              <AlertItem key={inv._id} title={inv.invoiceNumber} sub={`${inv.customer?.name || 'Customer'} · ${fmtINR(inv.totalAmount)}`} tone={inv.paymentStatus === 'Overdue' ? 'red' : 'amber'} onClick={() => navigate(`/invoices/${inv._id}`)} />
+            ))}
+          </div>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: 8 }}>{summary.slaTickets || 0}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: 8 }}>Ticket SLA</div>
+            {(data?.slaTickets || []).slice(0, 3).map(t => (
+              <AlertItem key={t._id} title={t.ticketNumber} sub={`${t.priority} · due ${fmtDate(t.dueBy)}`} tone={t.priority === 'Critical' ? 'red' : 'amber'} onClick={() => navigate(`/tickets/${t._id}`)} />
+            ))}
+          </div>
+        </div>
+      )}
+    </Panel>
+  )
+}
 
 function RenewalsPanel({ renewals, loading, days, setDays, navigate }) {
   return (

@@ -24,6 +24,10 @@ export const getRecentActivityApi = () =>
 export const getAlertSummaryApi = () =>
   axiosInstance.get('/dashboard/alert-summary')
 
+// GET /api/v1/dashboard/operational-alerts  — SuperAdmin, Admin
+export const getOperationalAlertsApi = () =>
+  axiosInstance.get('/dashboard/operational-alerts')
+
 // GET /api/v1/dashboard/my-overview  — All roles (Standard user personal stats)
 export const getMyOverviewApi = () =>
   axiosInstance.get('/dashboard/my-overview')
