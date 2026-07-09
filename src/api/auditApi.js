@@ -8,6 +8,10 @@ export const getAllAuditLogsApi = (params) =>
 export const getAuditLogByIdApi = (id) =>
   axiosInstance.get(`/audit/${id}`)
 
+// GET /api/v1/audit/timeline  — SuperAdmin, Admin
+export const getAuditTimelineApi = (params) =>
+  axiosInstance.get('/audit/timeline', { params })
+
 // GET /api/v1/audit/export
 export const exportAuditLogsApi = (params) =>
   axiosInstance.get('/audit/export', { params, responseType: 'blob' })

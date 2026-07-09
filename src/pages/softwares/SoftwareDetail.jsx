@@ -8,6 +8,7 @@ import {
   getSoftwareCustomersApi,
 } from '../../api/softwareApi'
 import axiosInstance from '../../api/axios'
+import ActivityTimeline from '../../components/common/ActivityTimeline'
 
 // ─── constants ────────────────────────────────────────────────────────────────
 const SW_TYPES      = ['Desktop', 'Mobile', 'Web', 'SAAS', 'API', 'PAAS']
@@ -532,6 +533,10 @@ export default function SoftwareDetail() {
                 <UrlLink label="Deploy URL" url={sw?.deploymentUrl} icon="Deploy" />
               </div>
             </Card>
+          )}
+
+          {isAdmin && sw?._id && (
+            <ActivityTimeline targetModel="Softwares" targetId={sw._id} />
           )}
 
           {/* Team */}

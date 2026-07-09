@@ -9,6 +9,7 @@ import {
   getAllTeamsApi, createTeamApi, updateTeamApi, deleteTeamApi,
   addTeamMemberApi, removeTeamMemberApi,
 } from '../../api/teamApi'
+import ActivityTimeline from '../../components/common/ActivityTimeline'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const ROLES = ['SuperAdmin', 'Admin', 'Standard']
@@ -140,6 +141,9 @@ function PortfolioModal({ user, allUsers, isSuperAdmin, onClose, onTransferred }
           )}
         </div>
         <div style={{ flex: 1, overflowY: 'auto' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid #f3f4f6' }}>
+            <ActivityTimeline targetModel="Users" targetId={user._id} title="User Activity" limit={8} />
+          </div>
           <div style={{ padding: '10px 20px 8px', fontSize: 10.5, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #f3f4f6', background: '#f9fafb' }}>Customer Portfolio</div>
           {loading ? (
             <div style={{ padding: '48px 20px', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>Loading portfolio…</div>

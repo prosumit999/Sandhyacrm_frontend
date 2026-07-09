@@ -12,6 +12,7 @@ import { getAllTicketsApi } from '../../api/ticketApi'
 import { getAllAlertsApi } from '../../api/alertApi'
 import { enablePortalAccessApi } from '../../api/portalApi'
 import { getAllUsersApi } from '../../api/userApi'
+import ActivityTimeline from '../../components/common/ActivityTimeline'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt   = d => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -570,6 +571,10 @@ export default function CustomerDetail() {
               </div>
               <div style={{ fontSize: 11.5, color: '#6b7280', marginTop: 2 }}>{fmtRs(nextRenewal.amountCharged)} · {nextRenewal.billingCycle}</div>
             </div>
+          )}
+
+          {isAdmin && !loading && c?._id && (
+            <ActivityTimeline targetModel="Customers" targetId={c._id} />
           )}
 
           {/* Edit button */}
