@@ -157,6 +157,7 @@ const BLANK = {
   status: 'Live', builtFor: 'Client', version: '',
   techStack: [],
   documentationUrl: '', setupCommand: '', envNotes: '', deploymentNotes: '',
+  credentialVaultUrl: '', hostingLoginRef: '', domainLoginRef: '', cloudConsoleRef: '', credentialNotes: '',
   liveUrl: '', playStoreUrl: '', appStoreUrl: '', downloadUrl: '', githubRepoUrl: '',
   hostingProvider: '', hostingExpiryDate: '', domainProvider: '',
   domainExpiryDate: '', sslExpiryDate: '',
@@ -286,6 +287,26 @@ function SoftwareDrawer({ mode, initial, onClose, onSaved, users, teams }) {
             </Field>
             <Field label="Deployment Notes">
               <textarea value={form.deploymentNotes} onChange={e => set('deploymentNotes', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="Build command, deploy platform, branch, rollback notes…" rows={3} style={inpStyle({ resize: 'vertical', lineHeight: 1.5 })} />
+            </Field>
+          </div>
+
+          {/* ── Access References ── */}
+          <SectionLabel label="Access References" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <Field label="Credential Vault URL" span={2}>
+              <input value={form.credentialVaultUrl} onChange={e => set('credentialVaultUrl', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="https://vault.example.com/item/software" style={inpStyle()} />
+            </Field>
+            <Field label="Hosting Login Ref">
+              <input value={form.hostingLoginRef} onChange={e => set('hostingLoginRef', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="Vault item, email alias, or account name" style={inpStyle()} />
+            </Field>
+            <Field label="Domain Login Ref">
+              <input value={form.domainLoginRef} onChange={e => set('domainLoginRef', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="Registrar account reference" style={inpStyle()} />
+            </Field>
+            <Field label="Cloud Console Ref">
+              <input value={form.cloudConsoleRef} onChange={e => set('cloudConsoleRef', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="AWS/GCP/Azure account or project id" style={inpStyle()} />
+            </Field>
+            <Field label="Credential Notes" span={2}>
+              <textarea value={form.credentialNotes} onChange={e => set('credentialNotes', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="Where credentials are stored, access owner, MFA notes. Do not paste passwords here." rows={3} style={inpStyle({ resize: 'vertical', lineHeight: 1.5 })} />
             </Field>
           </div>
 

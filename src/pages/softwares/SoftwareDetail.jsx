@@ -259,6 +259,7 @@ export default function SoftwareDetail() {
     name: '', type: 'Web', description: '', price: '', billingCycle: 'Yearly',
     version: '', status: 'Live', builtFor: 'Client', techStack: [],
     documentationUrl: '', setupCommand: '', envNotes: '', deploymentNotes: '',
+    credentialVaultUrl: '', hostingLoginRef: '', domainLoginRef: '', cloudConsoleRef: '', credentialNotes: '',
     liveUrl: '', playStoreUrl: '', appStoreUrl: '', downloadUrl: '', githubRepoUrl: '',
     hostingProvider: '', hostingExpiryDate: '',
     domainProvider: '', domainExpiryDate: '',
@@ -292,6 +293,11 @@ export default function SoftwareDetail() {
           setupCommand:      data.setupCommand      || '',
           envNotes:          data.envNotes          || '',
           deploymentNotes:   data.deploymentNotes   || '',
+          credentialVaultUrl:data.credentialVaultUrl|| '',
+          hostingLoginRef:   data.hostingLoginRef   || '',
+          domainLoginRef:    data.domainLoginRef    || '',
+          cloudConsoleRef:   data.cloudConsoleRef   || '',
+          credentialNotes:   data.credentialNotes   || '',
           liveUrl:           data.liveUrl           || '',
           playStoreUrl:      data.playStoreUrl      || '',
           appStoreUrl:       data.appStoreUrl       || '',
@@ -480,6 +486,18 @@ export default function SoftwareDetail() {
                 <DocBlock label="Setup Command" mono>{sw?.setupCommand}</DocBlock>
                 <DocBlock label="Environment Notes">{sw?.envNotes}</DocBlock>
                 <DocBlock label="Deployment Notes">{sw?.deploymentNotes}</DocBlock>
+              </div>
+            </Card>
+          )}
+
+          {(sw?.credentialVaultUrl || sw?.hostingLoginRef || sw?.domainLoginRef || sw?.cloudConsoleRef || sw?.credentialNotes) && (
+            <Card title="Access References">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <UrlLink label="Credential Vault" url={sw?.credentialVaultUrl} icon="Vault" />
+                <DocBlock label="Hosting Login Ref">{sw?.hostingLoginRef}</DocBlock>
+                <DocBlock label="Domain Login Ref">{sw?.domainLoginRef}</DocBlock>
+                <DocBlock label="Cloud Console Ref">{sw?.cloudConsoleRef}</DocBlock>
+                <DocBlock label="Credential Notes">{sw?.credentialNotes}</DocBlock>
               </div>
             </Card>
           )}
@@ -721,6 +739,21 @@ export default function SoftwareDetail() {
               </FRow>
               <FRow>
                 <div><Label>Deployment Notes</Label><FTextarea rows={3} value={form.deploymentNotes} onChange={e => setForm(f => ({ ...f, deploymentNotes: e.target.value }))} placeholder="Build command, deploy platform, branch, rollback notes…" /></div>
+              </FRow>
+
+              <SHdr>Access References</SHdr>
+              <FRow>
+                <div><Label>Credential Vault URL</Label><FInput value={form.credentialVaultUrl} onChange={e => setForm(f => ({ ...f, credentialVaultUrl: e.target.value }))} placeholder="https://vault.example.com/item/software" /></div>
+              </FRow>
+              <FRow cols={2}>
+                <div><Label>Hosting Login Ref</Label><FInput value={form.hostingLoginRef} onChange={e => setForm(f => ({ ...f, hostingLoginRef: e.target.value }))} placeholder="Vault item or account name" /></div>
+                <div><Label>Domain Login Ref</Label><FInput value={form.domainLoginRef} onChange={e => setForm(f => ({ ...f, domainLoginRef: e.target.value }))} placeholder="Registrar account reference" /></div>
+              </FRow>
+              <FRow>
+                <div><Label>Cloud Console Ref</Label><FInput value={form.cloudConsoleRef} onChange={e => setForm(f => ({ ...f, cloudConsoleRef: e.target.value }))} placeholder="AWS/GCP/Azure account or project id" /></div>
+              </FRow>
+              <FRow>
+                <div><Label>Credential Notes</Label><FTextarea rows={3} value={form.credentialNotes} onChange={e => setForm(f => ({ ...f, credentialNotes: e.target.value }))} placeholder="Where credentials are stored, access owner, MFA notes. Do not paste passwords here." /></div>
               </FRow>
 
               <SHdr>URLs</SHdr>
