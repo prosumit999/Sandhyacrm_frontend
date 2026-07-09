@@ -156,7 +156,8 @@ const BLANK = {
   name: '', type: '', description: '', price: '', billingCycle: 'Yearly',
   status: 'Live', builtFor: 'Client', version: '',
   techStack: [],
-  liveUrl: '', playStoreUrl: '', appStoreUrl: '', downloadUrl: '',
+  documentationUrl: '', setupCommand: '', envNotes: '', deploymentNotes: '',
+  liveUrl: '', playStoreUrl: '', appStoreUrl: '', downloadUrl: '', githubRepoUrl: '',
   hostingProvider: '', hostingExpiryDate: '', domainProvider: '',
   domainExpiryDate: '', sslExpiryDate: '',
   developer: '', managedBy: '', team: '',
@@ -271,11 +272,31 @@ function SoftwareDrawer({ mode, initial, onClose, onSaved, users, teams }) {
           <SectionLabel label="Technology Stack" />
           <TechStackInput value={form.techStack} onChange={v => set('techStack', v)} />
 
+          {/* ── Documentation ── */}
+          <SectionLabel label="Documentation" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginBottom: '12px' }}>
+            <Field label="Documentation URL">
+              <input value={form.documentationUrl} onChange={e => set('documentationUrl', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="https://docs.example.com/project" style={inpStyle()} />
+            </Field>
+            <Field label="Setup Command">
+              <input value={form.setupCommand} onChange={e => set('setupCommand', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="npm install && npm run dev" style={inpStyle({ fontFamily: 'monospace' })} />
+            </Field>
+            <Field label="Environment Notes">
+              <textarea value={form.envNotes} onChange={e => set('envNotes', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="Required env keys, service accounts, local setup notes…" rows={3} style={inpStyle({ resize: 'vertical', lineHeight: 1.5 })} />
+            </Field>
+            <Field label="Deployment Notes">
+              <textarea value={form.deploymentNotes} onChange={e => set('deploymentNotes', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="Build command, deploy platform, branch, rollback notes…" rows={3} style={inpStyle({ resize: 'vertical', lineHeight: 1.5 })} />
+            </Field>
+          </div>
+
           {/* ── URLs ── */}
           <SectionLabel label="URLs" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <Field label="Live / Web URL">
               <input value={form.liveUrl} onChange={e => set('liveUrl', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="https://app.example.com" style={inpStyle()} />
+            </Field>
+            <Field label="GitHub Repo URL">
+              <input value={form.githubRepoUrl} onChange={e => set('githubRepoUrl', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="https://github.com/org/repo" style={inpStyle()} />
             </Field>
             <Field label="Download URL">
               <input value={form.downloadUrl} onChange={e => set('downloadUrl', e.target.value)} onFocus={focusBorder} onBlur={blurBorder} placeholder="https://…" style={inpStyle()} />
@@ -445,6 +466,13 @@ function SoftwareCard({ sw, isAdmin, isSuperAdmin, onView, onEdit, onDelete }) {
           ))}
           {sw.techStack.length > 4 && <span style={{ fontSize: '11px', color: '#9ca3af' }}>+{sw.techStack.length - 4}</span>}
         </div>
+      )}
+
+      {sw.githubRepoUrl && (
+        <a href={sw.githubRepoUrl} target="_blank" rel="noopener noreferrer"
+          style={{ fontSize: '12px', color: '#1a73e8', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          GitHub Repository
+        </a>
       )}
 
       {/* Actions */}

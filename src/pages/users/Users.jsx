@@ -590,7 +590,7 @@ function MembersView({ isAdmin, isSuperAdmin, meId }) {
   const [editUser,     setEditUser]     = useState(null)
   const [saving,       setSaving]       = useState(false)
   const [drawerErr,    setDrawerErr]    = useState('')
-  const [form,         setForm]         = useState({ name: '', email: '', phone: '', password: '', role: 'Standard' })
+  const [form,         setForm]         = useState({ name: '', email: '', phone: '', githubProfileUrl: '', password: '', role: 'Standard' })
   const [showPwd,      setShowPwd]      = useState(false)
   const [portfolioStats, setPortfolioStats] = useState({})
   const [portfolioUser,  setPortfolioUser]  = useState(null)
@@ -599,7 +599,7 @@ function MembersView({ isAdmin, isSuperAdmin, meId }) {
   const [toggleTarget,   setToggleTarget]   = useState(null)
   const [toggleLoading,  setToggleLoading]  = useState(false)
 
-  const emptyForm = { name: '', email: '', phone: '', password: '', role: 'Standard' }
+  const emptyForm = { name: '', email: '', phone: '', githubProfileUrl: '', password: '', role: 'Standard' }
 
   const fetchStats = useCallback(async () => {
     try {
@@ -628,7 +628,7 @@ function MembersView({ isAdmin, isSuperAdmin, meId }) {
   useEffect(() => { fetchUsers(1) }, [search, filterRole, filterActive])
 
   const openCreate = () => { setEditUser(null); setForm(emptyForm); setDrawerErr(''); setShowPwd(false); setDrawerOpen(true) }
-  const openEdit   = u  => { setEditUser(u); setForm({ name: u.name || '', email: u.email || '', phone: u.phone || '', password: '', role: u.role || 'Standard' }); setDrawerErr(''); setShowPwd(false); setDrawerOpen(true) }
+  const openEdit   = u  => { setEditUser(u); setForm({ name: u.name || '', email: u.email || '', phone: u.phone || '', githubProfileUrl: u.githubProfileUrl || '', password: '', role: u.role || 'Standard' }); setDrawerErr(''); setShowPwd(false); setDrawerOpen(true) }
   const closeDrawer = () => { setDrawerOpen(false); setEditUser(null) }
 
   const handleSave = async () => {
@@ -637,7 +637,7 @@ function MembersView({ isAdmin, isSuperAdmin, meId }) {
     if (!editUser && !form.password.trim()) { setDrawerErr('Password is required for new users.'); return }
     setSaving(true); setDrawerErr('')
     try {
-      const body = { name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: form.phone.trim(), role: form.role, ...(form.password.trim() && { password: form.password }) }
+      const body = { name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: form.phone.trim(), githubProfileUrl: form.githubProfileUrl.trim(), role: form.role, ...(form.password.trim() && { password: form.password }) }
       const wasEdit = !!editUser
       if (editUser) { await updateUserApi(editUser._id, body) } else { await createUserApi(body) }
       closeDrawer(); fetchUsers(wasEdit ? page : 1)
@@ -757,6 +757,12 @@ function MembersView({ isAdmin, isSuperAdmin, meId }) {
                             {isSelf && <span style={{ background: '#eff6ff', color: '#1a73e8', border: '1px solid #bfdbfe', borderRadius: 3, padding: '0 5px', fontSize: 10, fontWeight: 700 }}>You</span>}
                           </div>
                           <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
+                          {u.githubProfileUrl && (
+                            <a href={u.githubProfileUrl} target="_blank" rel="noopener noreferrer"
+                              style={{ fontSize: 11, color: '#1a73e8', marginTop: 1, display: 'inline-block', textDecoration: 'none' }}>
+                              GitHub
+                            </a>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -873,6 +879,10 @@ function MembersView({ isAdmin, isSuperAdmin, meId }) {
                 <Label required>Email Address</Label>
                 <Inp type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="user@company.com" readOnly={!!editUser} style={editUser ? { cursor: 'not-allowed' } : {}} />
                 {editUser && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>Email cannot be changed after creation.</div>}
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <Label>GitHub Profile URL</Label>
+                <Inp value={form.githubProfileUrl} onChange={e => setForm(f => ({ ...f, githubProfileUrl: e.target.value }))} placeholder="https://github.com/username" />
               </div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '10px 0 8px', borderBottom: '1px solid gainsboro', marginBottom: 12 }}>Access & Role</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>

@@ -223,6 +223,16 @@ function UrlLink({ label, url, icon }) {
   )
 }
 
+function DocBlock({ label, children, mono }) {
+  if (!children) return null
+  return (
+    <div style={{ padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 7, background: '#f9fafb' }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 5 }}>{label}</div>
+      <div style={{ fontSize: 12.5, color: '#374151', lineHeight: 1.55, whiteSpace: 'pre-wrap', fontFamily: mono ? 'monospace' : 'inherit' }}>{children}</div>
+    </div>
+  )
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 //  MAIN COMPONENT
 // =============================================================================
@@ -248,7 +258,8 @@ export default function SoftwareDetail() {
   const emptyForm = {
     name: '', type: 'Web', description: '', price: '', billingCycle: 'Yearly',
     version: '', status: 'Live', builtFor: 'Client', techStack: [],
-    liveUrl: '', playStoreUrl: '', appStoreUrl: '', downloadUrl: '',
+    documentationUrl: '', setupCommand: '', envNotes: '', deploymentNotes: '',
+    liveUrl: '', playStoreUrl: '', appStoreUrl: '', downloadUrl: '', githubRepoUrl: '',
     hostingProvider: '', hostingExpiryDate: '',
     domainProvider: '', domainExpiryDate: '',
     sslExpiryDate: '', developer: '', managedBy: '',
@@ -277,10 +288,15 @@ export default function SoftwareDetail() {
           status:            data.status            || 'Live',
           builtFor:          data.builtFor          || 'Client',
           techStack:         data.techStack         || [],
+          documentationUrl:  data.documentationUrl  || '',
+          setupCommand:      data.setupCommand      || '',
+          envNotes:          data.envNotes          || '',
+          deploymentNotes:   data.deploymentNotes   || '',
           liveUrl:           data.liveUrl           || '',
           playStoreUrl:      data.playStoreUrl      || '',
           appStoreUrl:       data.appStoreUrl       || '',
           downloadUrl:       data.downloadUrl       || '',
+          githubRepoUrl:     data.githubRepoUrl     || '',
           hostingProvider:   data.hostingProvider   || '',
           hostingExpiryDate: data.hostingExpiryDate ? data.hostingExpiryDate.slice(0, 10) : '',
           domainProvider:    data.domainProvider    || '',
@@ -380,7 +396,7 @@ export default function SoftwareDetail() {
     )
   }
 
-  const hasUrls = sw?.liveUrl || sw?.playStoreUrl || sw?.appStoreUrl || sw?.downloadUrl
+  const hasUrls = sw?.liveUrl || sw?.playStoreUrl || sw?.appStoreUrl || sw?.downloadUrl || sw?.githubRepoUrl
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
@@ -457,6 +473,17 @@ export default function SoftwareDetail() {
             )}
           </Card>
 
+          {(sw?.documentationUrl || sw?.setupCommand || sw?.envNotes || sw?.deploymentNotes) && (
+            <Card title="Documentation">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <UrlLink label="Documentation URL" url={sw?.documentationUrl} icon="Doc" />
+                <DocBlock label="Setup Command" mono>{sw?.setupCommand}</DocBlock>
+                <DocBlock label="Environment Notes">{sw?.envNotes}</DocBlock>
+                <DocBlock label="Deployment Notes">{sw?.deploymentNotes}</DocBlock>
+              </div>
+            </Card>
+          )}
+
           {/* Team */}
           <Card title="Team">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -516,6 +543,7 @@ export default function SoftwareDetail() {
           </div>
           <div style={{ padding: '14px 16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
             <UrlLink label="Live / Web URL"      url={sw?.liveUrl}      icon="🌐" />
+            <UrlLink label="GitHub Repository"   url={sw?.githubRepoUrl} icon="{}" />
             <UrlLink label="Play Store"          url={sw?.playStoreUrl} icon="▶" />
             <UrlLink label="App Store"           url={sw?.appStoreUrl}  icon="" />
             <UrlLink label="Download"            url={sw?.downloadUrl}  icon="⬇" />
@@ -681,9 +709,26 @@ export default function SoftwareDetail() {
                 </div>
               </FRow>
 
+              <SHdr>Documentation</SHdr>
+              <FRow>
+                <div><Label>Documentation URL</Label><FInput value={form.documentationUrl} onChange={e => setForm(f => ({ ...f, documentationUrl: e.target.value }))} placeholder="https://docs.example.com/project" /></div>
+              </FRow>
+              <FRow>
+                <div><Label>Setup Command</Label><FInput value={form.setupCommand} onChange={e => setForm(f => ({ ...f, setupCommand: e.target.value }))} placeholder="npm install && npm run dev" style={{ fontFamily: 'monospace' }} /></div>
+              </FRow>
+              <FRow>
+                <div><Label>Environment Notes</Label><FTextarea rows={3} value={form.envNotes} onChange={e => setForm(f => ({ ...f, envNotes: e.target.value }))} placeholder="Required env keys, service accounts, local setup notes…" /></div>
+              </FRow>
+              <FRow>
+                <div><Label>Deployment Notes</Label><FTextarea rows={3} value={form.deploymentNotes} onChange={e => setForm(f => ({ ...f, deploymentNotes: e.target.value }))} placeholder="Build command, deploy platform, branch, rollback notes…" /></div>
+              </FRow>
+
               <SHdr>URLs</SHdr>
               <FRow>
                 <div><Label>Live / Web URL</Label><FInput value={form.liveUrl} onChange={e => setForm(f => ({ ...f, liveUrl: e.target.value }))} placeholder="https://" /></div>
+              </FRow>
+              <FRow>
+                <div><Label>GitHub Repo URL</Label><FInput value={form.githubRepoUrl} onChange={e => setForm(f => ({ ...f, githubRepoUrl: e.target.value }))} placeholder="https://github.com/org/repo" /></div>
               </FRow>
               <FRow cols={2}>
                 <div><Label>Play Store</Label><FInput value={form.playStoreUrl} onChange={e => setForm(f => ({ ...f, playStoreUrl: e.target.value }))} placeholder="https://play.google.com/…" /></div>
