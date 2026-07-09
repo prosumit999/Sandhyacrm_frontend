@@ -24,6 +24,7 @@ const IC = {
   subscriptions:  'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
   invoices:       'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
   tickets:        'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z',
+  tasks:          'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11',
   alerts:         'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
   communications: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
   reports:        'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
@@ -49,6 +50,7 @@ const ADMIN_OVERVIEW_NAV = [
   { to: '/subscriptions',  label: 'Subscriptions',  icon: 'subscriptions' },
   { to: '/invoices',       label: 'Invoices',       icon: 'invoices' },
   { to: '/tickets',        label: 'Support Tickets',icon: 'tickets' },
+  { to: '/tasks',          label: 'Tasks',          icon: 'tasks' },
   { to: '/alerts',         label: 'Alerts',         icon: 'alerts' },
   { to: '/communications', label: 'Communications', icon: 'communications' },
 ]
@@ -66,6 +68,7 @@ const STD_OVERVIEW_NAV = [
 ]
 const STD_WORK_NAV = [
   { to: '/tickets', label: 'Support Tickets', icon: 'tickets' },
+  { to: '/tasks',   label: 'Tasks',           icon: 'tasks' },
 ]
 const STD_COMMS_NAV = [
   { to: '/alerts',         label: 'Alerts',         icon: 'alerts' },
@@ -79,7 +82,7 @@ const ROLE_BADGE = {
 const PAGE_TITLES = {
   '/dashboard': 'Dashboard', '/customers': 'Customers', '/softwares': 'Softwares',
   '/subscriptions': 'Subscriptions', '/invoices': 'Invoices', '/tickets': 'Support Tickets',
-  '/alerts': 'Alerts', '/communications': 'Communications', '/reports': 'Reports',
+  '/tasks': 'Tasks', '/alerts': 'Alerts', '/communications': 'Communications', '/reports': 'Reports',
   '/users': 'User Management', '/users/new': 'Create User', '/teams': 'Teams', '/audit': 'Audit Logs',
   '/notifications': 'Notifications', '/settings': 'Settings',
 }

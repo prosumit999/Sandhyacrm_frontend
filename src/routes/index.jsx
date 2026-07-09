@@ -26,6 +26,7 @@ import ResetPassword from '../pages/auth/ResetPassword'
 
 // App pages (protected)
 import Tickets from '../pages/tickets/Tickets'
+import Tasks from '../pages/tasks/Tasks'
 import Dashboard from '../pages/dashboard/Dashboard'
 import CreateUser from '../pages/users/CreateUser'
 import Customers from '../pages/customers/Customers'
@@ -100,6 +101,7 @@ function ComingSoon({ title }) {
 //  │  /invoices/:id           /invoices/:id                Admin             │
 //  │  /tickets                /tickets                     Standard          │
 //  │  /tickets/:id            /tickets/:id                 Standard          │
+//  │  /tasks                  /tasks                       Standard          │
 //  │  /alerts                 /alerts                      Standard          │
 //  │  /communications         /communications              Standard          │
 //  │  /reports                /reports                     Admin             │
@@ -137,6 +139,7 @@ export default function AppRoutes() {
 
           <Route path="/tickets"              element={<Tickets />} />
           <Route path="/tickets/:id"          element={<Tickets />} />
+          <Route path="/tasks"                element={<Tasks />} />
 
           <Route path="/alerts"               element={<Alerts />} />
 
